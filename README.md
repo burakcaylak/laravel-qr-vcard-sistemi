@@ -44,7 +44,7 @@ php artisan key:generate
 
 4. **.env dosyasını düzenleyin:**
 ```env
-APP_NAME="WM Dosya&QR Yönetimi"
+APP_NAME="Dosya&QR Yönetimi"
 APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost
