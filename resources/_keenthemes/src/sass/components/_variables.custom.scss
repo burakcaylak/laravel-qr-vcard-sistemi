@@ -1,0 +1,52 @@
+//
+// To make future updates easier consider overriding the global variables from _variables.bootstrap.scss and _variables.custom.scss for current demo in this file.
+// Note that this file is included first and variables defined in _variables.bootstrap.scss and _variables.custom.scss
+// are not accessible in this file but you can override any global variable as shown below:
+//
+
+// Custom Color Palette
+// Renk ailesi güncellemesi
+
+// Primary colors
+$primary:						#0033A1 !default;
+$primary-active:				#19468D !default;
+$primary-light: 				#E3E7F4 !default;
+$primary-clarity: 				rgba(#0033A1, 0.2) !default;
+$primary-inverse: 				#FFFFFF !default; 
+
+// Secondary colors
+$secondary: 					#15376D !default;
+$secondary-active: 				#19468D !default;
+$secondary-light: 				#E3E7F4 !default;
+$secondary-clarity:			rgba(#15376D, 0.2) !default; 
+$secondary-inverse:				#FFFFFF !default; 
+
+// Text colors
+$text-color:					#111827 !default;
+$text-muted:					#6B7280 !default;
+
+// Accent colors
+$accent:						#6B7280 !default;
+
+// Success colors (green)
+$success: 						#10B981 !default; 
+$success-active: 				#059669 !default;
+$success-light: 				#D1FAE5 !default;
+$success-clarity: 				rgba(#10B981, 0.2) !default;
+$success-inverse: 				#FFFFFF !default;
+
+// Danger colors (red)
+$danger: 						#EF4444 !default; 
+$danger-active: 				#DC2626 !default;
+$danger-light: 					#FEE2E2 !default;
+$danger-clarity: 				rgba(#EF4444, 0.2) !default;
+$danger-inverse: 				#FFFFFF !default;
+
+// Background colors
+$background-light:				#FAFBFC !default;
+$background-white:				#FFFFFF !default;
+$background-black:				#000000 !default;
+
+// Gray colors override
+$gray-100: 						#FAFBFC !default;
+$gray-500: 						#6B7280 !default;
