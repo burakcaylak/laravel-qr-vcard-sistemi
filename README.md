@@ -1,4 +1,4 @@
-# WM Dosya & QR Yönetim Sistemi
+# Dosya & QR Yönetim Sistemi
 
 Laravel tabanlı dosya yönetimi ve QR kod oluşturma sistemi.
 
