@@ -1,4 +1,4 @@
-# WM Dosya & QR Yönetim Sistemi
+# Dosya & QR Yönetim Sistemi
 
 Laravel tabanlı dosya yönetimi ve QR kod oluşturma sistemi.
 
@@ -56,7 +56,7 @@ php artisan key:generate
 
 4. **.env dosyasını düzenleyin:**
 ```env
-APP_NAME="WM Dosya&QR Yönetimi"
+APP_NAME="Dosya&QR Yönetimi"
 APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost
