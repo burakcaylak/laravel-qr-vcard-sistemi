@@ -15,6 +15,7 @@ use App\Http\Controllers\IndexController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\VCardController;
 use App\Http\Controllers\VCardTemplateController;
+use App\Http\Controllers\BrochureController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -86,6 +87,7 @@ Route::middleware(['auth'])->group(function () {
     });
     Route::get('/media-library/{id}', [MediaLibraryController::class, 'show'])->name('media-library.show');
     Route::get('/media-library/{id}/edit', [MediaLibraryController::class, 'edit'])->name('media-library.edit');
+    Route::match(['get', 'options'], '/media-library/{id}/download', [MediaLibraryController::class, 'download'])->name('media-library.download');
     Route::put('/media-library/{id}', [MediaLibraryController::class, 'update'])->name('media-library.update');
     Route::delete('/media-library/{path}', [MediaLibraryController::class, 'destroy'])->name('media-library.destroy')->where('path', '.*');
 
@@ -119,6 +121,18 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{vCardTemplate}', [VCardTemplateController::class, 'destroy'])->name('destroy');
     });
 
+    // Kitapçık Yönetimi (Rate limiting: 60 requests per minute)
+    Route::name('brochure.')->prefix('brochure')->middleware(['throttle:60,1'])->group(function () {
+        Route::get('/', [BrochureController::class, 'index'])->name('index');
+        Route::get('/create', [BrochureController::class, 'create'])->name('create');
+        Route::post('/', [BrochureController::class, 'store'])->name('store');
+        Route::get('/{brochure}', [BrochureController::class, 'show'])->name('show')->where('brochure', '[0-9]+');
+        Route::get('/{brochure}/edit', [BrochureController::class, 'edit'])->name('edit')->where('brochure', '[0-9]+');
+        Route::put('/{brochure}', [BrochureController::class, 'update'])->name('update')->where('brochure', '[0-9]+');
+        Route::delete('/{brochure}', [BrochureController::class, 'destroy'])->name('destroy')->where('brochure', '[0-9]+');
+        Route::get('/{brochure}/download', [BrochureController::class, 'download'])->name('download')->where('brochure', '[0-9]+');
+    });
+
     // Activity Logs
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
@@ -136,5 +150,9 @@ Route::get('/qr/{token}/file/{fileId}', [QrAccessController::class, 'downloadFil
 
 // vCard erişimi (herkese açık)
 Route::get('/vcard/{token}', [VCardController::class, 'access'])->name('vcard.access');
+
+// Kitapçık erişimi (herkese açık - flipbook görüntüleme) - ÖNCE TANIMLANMALI
+Route::get('/brochure/{token}', [BrochureController::class, 'access'])->name('brochure.access')->where('token', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}');
+Route::match(['get', 'options'], '/brochure/{token}/pdf', [BrochureController::class, 'pdf'])->name('brochure.pdf')->where('token', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}');
 
 require __DIR__ . '/auth.php';

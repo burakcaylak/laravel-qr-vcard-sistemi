@@ -69,6 +69,23 @@ class File extends Model
 
     public function getUrlAttribute(): string
     {
-        return asset('storage/' . $this->path);
+        // Download route'unu kullan (CORS header'ları ile)
+        return route('media-library.download', $this->id);
+    }
+    
+    public function getStorageUrlAttribute(): string
+    {
+        // Doğrudan storage URL'i (eski yöntem, geriye dönük uyumluluk için)
+        $pathParts = explode('/', $this->path);
+        $encodedParts = [];
+        foreach ($pathParts as $part) {
+            if (end($pathParts) === $part) {
+                $encodedParts[] = rawurlencode($part);
+            } else {
+                $encodedParts[] = $part;
+            }
+        }
+        $encodedPath = implode('/', $encodedParts);
+        return asset('storage/' . $encodedPath);
     }
 }

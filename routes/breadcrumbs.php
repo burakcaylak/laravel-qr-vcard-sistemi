@@ -155,3 +155,27 @@ Breadcrumbs::for('v-card-template.edit', function (BreadcrumbTrail $trail, \App\
     $trail->parent('v-card-template.index');
     $trail->push(__('common.edit') . ': ' . $vCardTemplate->name, route('v-card-template.edit', $vCardTemplate));
 });
+
+// Ana Sayfa > Başlangıç > Kitapçık Yönetimi
+Breadcrumbs::for('brochure.index', function (BreadcrumbTrail $trail) {
+    $trail->parent('dashboard');
+    $trail->push(__('common.brochure_management'), route('brochure.index'));
+});
+
+// Ana Sayfa > Başlangıç > Kitapçık Yönetimi > Yeni Kitapçık
+Breadcrumbs::for('brochure.create', function (BreadcrumbTrail $trail) {
+    $trail->parent('brochure.index');
+    $trail->push(__('common.create_brochure'), route('brochure.create'));
+});
+
+// Ana Sayfa > Başlangıç > Kitapçık Yönetimi > [Brochure]
+Breadcrumbs::for('brochure.show', function (BreadcrumbTrail $trail, \App\Models\Brochure $brochure) {
+    $trail->parent('brochure.index');
+    $trail->push($brochure->name, route('brochure.show', $brochure));
+});
+
+// Ana Sayfa > Başlangıç > Kitapçık Yönetimi > Düzenle [Brochure]
+Breadcrumbs::for('brochure.edit', function (BreadcrumbTrail $trail, \App\Models\Brochure $brochure) {
+    $trail->parent('brochure.show', $brochure);
+    $trail->push(__('common.edit'), route('brochure.edit', $brochure));
+});

@@ -8,9 +8,23 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class MediaLibraryController extends Controller
 {
+    /**
+     * CORS header'ları ile JSON response döndür
+     */
+    private function jsonResponse($data, $status = 200)
+    {
+        return response()->json($data, $status, [
+            'Access-Control-Allow-Origin' => request()->header('Origin', '*'),
+            'Access-Control-Allow-Methods' => 'POST, GET, OPTIONS, PUT, DELETE',
+            'Access-Control-Allow-Headers' => 'Content-Type, X-CSRF-TOKEN, X-Requested-With, Accept, Authorization',
+            'Access-Control-Allow-Credentials' => 'true',
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+    
     public function checkFile(Request $request)
     {
         $request->validate([
@@ -31,7 +45,7 @@ class MediaLibraryController extends Controller
         
         $exists = Storage::disk('public')->exists($targetPath);
         
-        return response()->json([
+        return $this->jsonResponse([
             'file_exists' => $exists,
             'file_name' => $originalName,
             'file_path' => $targetPath,
@@ -114,7 +128,7 @@ class MediaLibraryController extends Controller
                                 'user' => null,
                                 'created_at' => date('Y-m-d H:i:s', Storage::disk('public')->lastModified($filePath)),
                                 'last_modified' => Storage::disk('public')->lastModified($filePath),
-                                'url' => asset('storage/' . $filePath),
+                                'url' => asset('storage/' . implode('/', array_map('rawurlencode', explode('/', $filePath)))),
                                 'folder' => dirname($filePath),
                             ];
                         } catch (\Exception $e) {
@@ -130,7 +144,7 @@ class MediaLibraryController extends Controller
         
         // JSON response isteniyorsa
         if ($request->expectsJson() || $request->wantsJson()) {
-            return response()->json([
+            return $this->jsonResponse([
                 'success' => true,
                 'files' => array_values($mediaFiles),
             ]);
@@ -141,16 +155,39 @@ class MediaLibraryController extends Controller
     
     public function store(Request $request)
     {
-        $request->validate([
-            'file' => 'required|file|max:' . config('files.max_file_size'),
-            'name' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'category_id' => 'nullable|exists:categories,id',
-            'is_public' => 'nullable|boolean',
-            'overwrite' => 'nullable|boolean',
-        ]);
+        // Büyük dosyalar için execution time limit'i artır
+        set_time_limit(600); // 10 dakika
+        ini_set('max_execution_time', 600);
+        
+        try {
+            $request->validate([
+                'file' => 'required|file|max:' . config('files.max_file_size'),
+                'name' => 'nullable|string|max:255',
+                'description' => 'nullable|string|max:1000',
+                'category_id' => 'nullable|exists:categories,id',
+                'is_public' => 'nullable|boolean',
+                'overwrite' => 'nullable|boolean',
+            ]);
+        } catch (ValidationException $e) {
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Validation hatası',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            throw $e;
+        }
         
         $file = $request->file('file');
+        
+        if (!$file) {
+            return $this->jsonResponse([
+                'success' => false,
+                'message' => 'Dosya bulunamadı. Lütfen bir dosya seçin.',
+            ], 422);
+        }
+        
         // Kategoriye göre klasör belirleme - varsayılan olarak 'files' klasörü
         $folder = 'files';
         
@@ -158,18 +195,41 @@ class MediaLibraryController extends Controller
         $originalName = $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         
-        // Dosya adı belirleme
-        $fileName = $request->input('name') 
-            ? $request->input('name') . '.' . $extension 
-            : $originalName;
+        // Dosya adını güvenli hale getir (özel karakterleri temizle, boşlukları alt çizgi ile değiştir)
+        $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+        $safeName = preg_replace('/_+/', '_', $safeName); // Birden fazla alt çizgiyi tek yap
+        $safeName = trim($safeName, '_'); // Baştan ve sondan alt çizgileri temizle
         
+        // Eğer safe name boşsa, timestamp kullan
+        if (empty($safeName)) {
+            $safeName = 'file_' . time();
+        }
+        
+        // Dosya adı belirleme
+        if ($request->input('name')) {
+            $customName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $request->input('name'));
+            $customName = preg_replace('/_+/', '_', $customName);
+            $customName = trim($customName, '_');
+            $fileName = $customName . '.' . $extension;
+        } else {
+            $fileName = $safeName . '.' . $extension;
+        }
+        
+        // Eğer aynı isimde dosya varsa, timestamp ekle
         $targetPath = $folder . '/' . $fileName;
+        $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+        $counter = 1;
+        while (Storage::disk('public')->exists($targetPath)) {
+            $fileName = $baseName . '_' . $counter . '.' . $extension;
+            $targetPath = $folder . '/' . $fileName;
+            $counter++;
+        }
         
         // Aynı isimde dosya var mı kontrol et
         $existingFile = File::where('path', $targetPath)->first();
         
         if ($existingFile && !$request->boolean('overwrite')) {
-            return response()->json([
+            return $this->jsonResponse([
                 'success' => false,
                 'message' => 'Aynı isimde bir dosya zaten mevcut.',
                 'file_exists' => true,
@@ -196,7 +256,7 @@ class MediaLibraryController extends Controller
         );
         
         if (!in_array($mimeType, $allowedMimes)) {
-            return response()->json([
+            return $this->jsonResponse([
                 'success' => false,
                 'message' => __('common.invalid_file_type'),
             ], 422);
@@ -208,7 +268,7 @@ class MediaLibraryController extends Controller
             $scanResult = \App\Services\VirusScannerService::scan($tempPath);
             
             if (!$scanResult['clean']) {
-                return response()->json([
+                return $this->jsonResponse([
                     'success' => false,
                     'message' => __('common.virus_detected') . ': ' . $scanResult['message'],
                 ], 422);
@@ -216,7 +276,48 @@ class MediaLibraryController extends Controller
         }
         
         // Dosyayı kaydet
-        $path = $file->storeAs($folder, $fileName, 'public');
+        try {
+            $path = $file->storeAs($folder, $fileName, 'public');
+            
+            if (!$path) {
+                \Log::error('File upload failed: storeAs returned false', [
+                    'folder' => $folder,
+                    'fileName' => $fileName,
+                    'originalName' => $originalName,
+                ]);
+                
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Dosya kaydedilemedi. Lütfen tekrar deneyin.',
+                ], 500);
+            }
+            
+            // Dosyanın gerçekten kaydedildiğini kontrol et
+            if (!Storage::disk('public')->exists($path)) {
+                \Log::error('File upload failed: File does not exist after storeAs', [
+                    'path' => $path,
+                    'folder' => $folder,
+                    'fileName' => $fileName,
+                ]);
+                
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Dosya kaydedilemedi. Lütfen tekrar deneyin.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('File upload exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'folder' => $folder,
+                'fileName' => $fileName,
+            ]);
+            
+            return $this->jsonResponse([
+                'success' => false,
+                'message' => 'Dosya yüklenirken bir hata oluştu: ' . $e->getMessage(),
+            ], 500);
+        }
         
         // Name alanını belirle - her zaman bir değer olmalı
         $name = $request->input('name');
@@ -263,12 +364,29 @@ class MediaLibraryController extends Controller
             'user_agent' => request()->userAgent(),
         ]);
         
-        if ($request->expectsJson()) {
-            return response()->json([
+        if ($request->expectsJson() || $request->wantsJson()) {
+            $responseData = [
                 'success' => true,
                 'message' => 'Dosya başarıyla yüklendi.',
-                'file' => $fileModel,
+                'file' => [
+                    'id' => $fileModel->id,
+                    'name' => $fileModel->name,
+                    'original_name' => $fileModel->original_name,
+                    'path' => $fileModel->path,
+                    'type' => $fileModel->type,
+                    'mime_type' => $fileModel->mime_type,
+                    'size' => $fileModel->size,
+                    'url' => $fileModel->url,
+                ],
+                'id' => $fileModel->id,
+            ];
+            
+            \Log::info('Sending JSON response for file upload', [
+                'file_id' => $fileModel->id,
+                'response_size' => strlen(json_encode($responseData)),
             ]);
+            
+            return $this->jsonResponse($responseData, 200);
         }
         
         return redirect()->route('media-library.index')->with('success', __('common.media_uploaded'));
@@ -314,7 +432,7 @@ class MediaLibraryController extends Controller
             $file->delete();
             
             if ($request->expectsJson()) {
-                return response()->json([
+                return $this->jsonResponse([
                     'success' => true,
                     'message' => 'Dosya başarıyla silindi.',
                 ]);
@@ -333,7 +451,7 @@ class MediaLibraryController extends Controller
             Storage::disk('public')->delete($decodedPath);
             
             if ($request->expectsJson()) {
-                return response()->json([
+                return $this->jsonResponse([
                     'success' => true,
                     'message' => 'Dosya başarıyla silindi.',
                 ]);
@@ -343,7 +461,7 @@ class MediaLibraryController extends Controller
         }
         
         if ($request->expectsJson()) {
-            return response()->json([
+            return $this->jsonResponse([
                 'success' => false,
                 'message' => 'Dosya bulunamadı.',
             ], 404);
@@ -389,7 +507,7 @@ class MediaLibraryController extends Controller
         ActivityLogHelper::logFile('updated', $file);
         
         if ($request->expectsJson()) {
-            return response()->json([
+            return $this->jsonResponse([
                 'success' => true,
                 'message' => 'Dosya başarıyla güncellendi.',
                 'file' => $file,
@@ -398,6 +516,46 @@ class MediaLibraryController extends Controller
         
         return redirect()->route('media-library.show', $file)
             ->with('success', __('common.file_updated'));
+    }
+    
+    /**
+     * Download the specified file.
+     */
+    public function download($id)
+    {
+        // OPTIONS isteği için CORS header'larını döndür
+        if (request()->isMethod('options')) {
+            return response('', 200, [
+                'Access-Control-Allow-Origin' => request()->header('Origin', '*'),
+                'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, X-Requested-With, Accept, Authorization',
+                'Access-Control-Allow-Credentials' => 'true',
+                'Access-Control-Max-Age' => '86400',
+            ]);
+        }
+        
+        $file = File::findOrFail($id);
+        
+        // Yetki kontrolü (isteğe bağlı)
+        // $this->authorize('view', $file);
+        
+        if (Storage::disk('public')->exists($file->path)) {
+            $file->increment('download_count');
+            
+            ActivityLogHelper::logFile('downloaded', $file);
+            
+            $filePath = Storage::disk('public')->path($file->path);
+            $fileName = $file->original_name;
+            
+            return response()->download($filePath, $fileName, [
+                'Access-Control-Allow-Origin' => request()->header('Origin', '*'),
+                'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, X-Requested-With, Accept, Authorization',
+                'Access-Control-Allow-Credentials' => 'true',
+            ]);
+        }
+        
+        abort(404, 'Dosya bulunamadı.');
     }
 }
 

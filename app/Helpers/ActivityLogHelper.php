@@ -129,5 +129,28 @@ class ActivityLogHelper
             ])
         );
     }
+
+    /**
+     * Log Brochure operations
+     */
+    public static function logBrochure($action, $brochure, $details = [])
+    {
+        $descriptions = [
+            'created' => "Kitapçık oluşturuldu: {$brochure->name}",
+            'updated' => "Kitapçık güncellendi: {$brochure->name}",
+            'deleted' => "Kitapçık silindi: {$brochure->name}",
+            'downloaded' => "Kitapçık QR kodu indirildi: {$brochure->name}",
+        ];
+
+        self::log(
+            $descriptions[$action] ?? "Kitapçık işlemi: {$brochure->name}",
+            $brochure,
+            $action,
+            array_merge($details, [
+                'brochure_name' => $brochure->name,
+                'brochure_token' => $brochure->token,
+            ])
+        );
+    }
 }
 

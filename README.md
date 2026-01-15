@@ -6,6 +6,7 @@ Laravel tabanlı dosya yönetimi ve QR kod oluşturma sistemi.
 
 - 📁 Dosya Yönetimi (Media Library)
 - 📱 QR Kod Oluşturma ve Yönetimi
+- 📄 Kitapçık (Brochure) Yönetimi - PDF Flipbook Sistemi
 - 👤 vCard Oluşturma ve Paylaşımı
 - 🎨 vCard Şablon Yönetimi
 - 👥 Kullanıcı ve Rol Yönetimi
@@ -13,6 +14,17 @@ Laravel tabanlı dosya yönetimi ve QR kod oluşturma sistemi.
 - 🔐 Güvenli Kimlik Doğrulama
 - 📝 Aktivite Logları
 - 🌐 Çoklu Dil Desteği (TR/EN)
+
+### 📄 Kitapçık (Brochure) Özellikleri
+
+- PDF dosyası yükleme (Media Library entegrasyonu)
+- Arkaplan görseli veya renk seçimi
+- QR kod ile herkese açık paylaşım
+- dFlip ile interaktif flipbook görüntüleme
+- Sayfa geçişleri, zoom, tam ekran desteği
+- Türkçe arayüz
+- View ve download istatistikleri
+- Süre sınırlaması (expires_at) desteği
 
 ## 📋 Gereksinimler
 

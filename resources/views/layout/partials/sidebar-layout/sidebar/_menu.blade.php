@@ -143,6 +143,47 @@
 			</div>
 			<!--end:Menu item-->
 			<!--begin:Menu item-->
+			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('brochure.*') ? 'here show' : '' }}">
+				<!--begin:Menu link-->
+				<span class="menu-link">
+					<span class="menu-icon">
+						<i class="ki-solid ki-document fs-2"></i>
+					</span>
+					<span class="menu-title">{{ __('common.brochure') }}</span>
+					<span class="menu-arrow"></span>
+				</span>
+				<!--end:Menu link-->
+				<!--begin:Menu sub-->
+				<div class="menu-sub menu-sub-accordion">
+					<!--begin:Menu item-->
+					<div class="menu-item">
+						<!--begin:Menu link-->
+						<a class="menu-link {{ request()->routeIs('brochure.index') ? 'active' : '' }}" href="{{ route('brochure.index') }}">
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
+							</span>
+							<span class="menu-title">{{ __('common.brochure_list') }}</span>
+						</a>
+						<!--end:Menu link-->
+					</div>
+					<!--end:Menu item-->
+					<!--begin:Menu item-->
+					<div class="menu-item">
+						<!--begin:Menu link-->
+						<a class="menu-link {{ request()->routeIs('brochure.create') ? 'active' : '' }}" href="{{ route('brochure.create') }}">
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
+							</span>
+							<span class="menu-title">{{ __('common.create_brochure') }}</span>
+						</a>
+						<!--end:Menu link-->
+					</div>
+					<!--end:Menu item-->
+				</div>
+				<!--end:Menu sub-->
+			</div>
+			<!--end:Menu item-->
+			<!--begin:Menu item-->
 			@if(auth()->user()->hasRole('superadmin'))
 			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('settings.*') || request()->routeIs('user-management.*') ? 'here show' : '' }}">
 				<!--begin:Menu link-->
