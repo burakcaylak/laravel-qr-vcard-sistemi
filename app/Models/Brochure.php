@@ -27,6 +27,8 @@ class Brochure extends Model
         'expires_at',
         'view_count',
         'download_count',
+        'password',
+        'password_protected',
     ];
 
     protected $casts = [
@@ -34,6 +36,7 @@ class Brochure extends Model
         'expires_at' => 'datetime',
         'view_count' => 'integer',
         'download_count' => 'integer',
+        'password_protected' => 'boolean',
     ];
 
     protected static function boot()
@@ -74,5 +77,15 @@ class Brochure extends Model
     public function getAccessUrlAttribute(): string
     {
         return route('brochure.access', $this->token);
+    }
+
+    public function hasPassword(): bool
+    {
+        return !empty($this->password);
+    }
+
+    public function verifyPassword($password): bool
+    {
+        return password_verify($password, $this->password);
     }
 }

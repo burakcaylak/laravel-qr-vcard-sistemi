@@ -7,6 +7,7 @@ use App\Models\VCard;
 use App\Models\Category;
 use App\Models\VCardTemplate;
 use App\Helpers\ActivityLogHelper;
+use App\Helpers\CacheHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeGenerator;
@@ -16,20 +17,9 @@ class VCardController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(\App\DataTables\VCardsDataTable $dataTable)
     {
-        $vCards = VCard::with(['user', 'category'])
-            ->latest()
-            ->paginate(15);
-        
-        // Her vCard için QR kod kontrolü yap ve yoksa oluştur
-        foreach ($vCards as $vCard) {
-            if (!$vCard->file_path || !Storage::disk('public')->exists($vCard->file_path)) {
-                $this->generateQrImage($vCard);
-            }
-        }
-            
-        return view('pages.v-card.list', compact('vCards'));
+        return $dataTable->render('pages.v-card.list');
     }
 
     /**
@@ -37,10 +27,7 @@ class VCardController extends Controller
      */
     public function create()
     {
-        $categories = Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         $templates = VCardTemplate::where('is_active', true)
             ->orderBy('name')
@@ -143,10 +130,7 @@ class VCardController extends Controller
      */
     public function edit(VCard $vCard)
     {
-        $categories = Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         $templates = VCardTemplate::where('is_active', true)
             ->orderBy('name')
@@ -379,5 +363,51 @@ class VCardController extends Controller
         $vCardLines[] = 'END:VCARD';
 
         return implode("\r\n", $vCardLines);
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:delete,activate,deactivate',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:v_cards,id',
+        ]);
+
+        $ids = $request->ids;
+        $action = $request->action;
+
+        \DB::beginTransaction();
+        try {
+            switch ($action) {
+                case 'delete':
+                    VCard::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->delete();
+                    break;
+                case 'activate':
+                    VCard::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => true]);
+                    break;
+                case 'deactivate':
+                    VCard::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => false]);
+                    break;
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('common.bulk_action_success'),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => __('common.bulk_action_error'),
+            ], 500);
+        }
     }
 }

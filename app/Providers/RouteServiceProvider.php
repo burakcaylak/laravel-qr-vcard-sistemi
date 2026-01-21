@@ -45,7 +45,28 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting()
     {
+        // API Rate Limiting
         RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Web Rate Limiting - Authenticated Users
+        RateLimiter::for('web', function (Request $request) {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Public Access Rate Limiting (QR, Brochure, VCard, ShortLink)
+        RateLimiter::for('public-access', function (Request $request) {
+            return Limit::perMinute(100)->by($request->ip());
+        });
+
+        // File Upload Rate Limiting
+        RateLimiter::for('file-upload', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Analytics Rate Limiting
+        RateLimiter::for('analytics', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
     }

@@ -8,7 +8,7 @@
         </span>
     @endif
     <div class="d-flex flex-column">
-        <a href="{{ route('qr-code.show', $qrCode) }}" class="text-gray-800 text-hover-primary fw-bold">
+        <a href="{{ route('qr-code.show', $qrCode) }}" class="text-gray-800 text-hover-primary fw-bold fs-6">
             {{ $qrCode->name }}
         </a>
     </div>

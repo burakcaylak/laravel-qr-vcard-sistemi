@@ -231,4 +231,84 @@ class FileManagementController extends Controller
 
         return 'other';
     }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:delete,activate,deactivate',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:files,id',
+        ]);
+
+        $ids = $request->ids;
+        $action = $request->action;
+
+        \DB::beginTransaction();
+        try {
+            switch ($action) {
+                case 'delete':
+                    // Büyük silme işlemleri için queue kullan (10'dan fazla dosya)
+                    if (count($ids) > 10 && config('queue.default') !== 'sync') {
+                        \App\Jobs\BulkDeleteFilesJob::dispatch($ids, auth()->id());
+                        
+                        return response()->json([
+                            'success' => true,
+                            'message' => __('common.bulk_delete_queued', ['count' => count($ids)]),
+                        ]);
+                    } else {
+                        // Küçük silme işlemleri için direkt sil
+                        $files = File::whereIn('id', $ids)
+                            ->where('user_id', auth()->id())
+                            ->get();
+                        
+                        foreach ($files as $file) {
+                            // Dosyayı storage'dan sil
+                            if ($file->path && Storage::disk('public')->exists($file->path)) {
+                                Storage::disk('public')->delete($file->path);
+                            }
+                            
+                            // Thumbnail varsa sil
+                            $thumbnailPath = str_replace(
+                                pathinfo($file->path, PATHINFO_DIRNAME),
+                                pathinfo($file->path, PATHINFO_DIRNAME) . '/thumbnails',
+                                $file->path
+                            );
+                            
+                            if (Storage::disk('public')->exists($thumbnailPath)) {
+                                Storage::disk('public')->delete($thumbnailPath);
+                            }
+                            
+                            ActivityLogHelper::logFile('deleted', $file);
+                            
+                            // Veritabanından sil
+                            $file->delete();
+                        }
+                    }
+                    break;
+                case 'activate':
+                    File::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => true]);
+                    break;
+                case 'deactivate':
+                    File::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => false]);
+                    break;
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('common.bulk_action_success'),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => __('common.bulk_action_error'),
+            ], 500);
+        }
+    }
 }

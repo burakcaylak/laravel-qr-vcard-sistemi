@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ActivityLogHelper;
+use App\Helpers\CacheHelper;
 use App\Models\File;
 use App\Models\Category;
 use Illuminate\Http\Request;
@@ -140,7 +141,7 @@ class MediaLibraryController extends Controller
         }
         
         // Kategoriler
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $categories = CacheHelper::getActiveCategories();
         
         // JSON response isteniyorsa
         if ($request->expectsJson() || $request->wantsJson()) {
@@ -346,10 +347,26 @@ class MediaLibraryController extends Controller
         
         ActivityLogHelper::logFile('created', $fileModel);
         
-        // Büyük dosyalar için queue'ya gönder (thumbnail generation)
-        if ($fileModel->size > 1024 * 1024 && in_array($fileModel->type, ['image'])) { // 1MB'dan büyük görseller
-            if (config('queue.default') !== 'sync') {
+        // Büyük dosyalar için queue'ya gönder
+        if (config('queue.default') !== 'sync') {
+            // Büyük görseller için thumbnail ve optimizasyon
+            if ($fileModel->type === 'image' && $fileModel->size > 1024 * 1024) { // 1MB'dan büyük görseller
                 \App\Jobs\ProcessFileUploadJob::dispatch($fileModel);
+                
+                // 2MB'dan büyük görseller için optimizasyon
+                if ($fileModel->size > 2 * 1024 * 1024) {
+                    \App\Jobs\OptimizeImageJob::dispatch($fileModel)->delay(now()->addMinutes(1));
+                }
+            }
+            
+            // Videolar için işleme
+            if ($fileModel->type === 'video') {
+                \App\Jobs\ProcessVideoJob::dispatch($fileModel);
+            }
+            
+            // PDF'ler için işleme
+            if ($fileModel->type === 'document' && $fileModel->mime_type === 'application/pdf') {
+                \App\Jobs\ProcessPdfJob::dispatch($fileModel);
             }
         }
         
@@ -485,7 +502,7 @@ class MediaLibraryController extends Controller
         $file = File::findOrFail($id);
         $this->authorize('update', $file);
         
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $categories = CacheHelper::getActiveCategories();
         
         return view('pages.media-library.edit', compact('file', 'categories'));
     }

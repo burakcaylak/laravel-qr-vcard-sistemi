@@ -14,12 +14,37 @@
 				<!--end:Menu link-->
 			</div>
 			<!--end:Menu item-->
+			
 			<!--begin:Menu item-->
 			<div class="menu-item">
 				<!--begin:Menu link-->
-				<a class="menu-link {{ request()->routeIs('qr-code.index') ? 'active' : '' }}" href="{{ route('qr-code.index') }}">
+				<a class="menu-link {{ request()->routeIs('analytics.*') ? 'active' : '' }}" href="{{ route('analytics.index') }}">
+					<span class="menu-icon">{!! getIcon('chart-simple', 'fs-2') !!}</span>
+					<span class="menu-title">{{ __('common.analytics') }}</span>
+				</a>
+				<!--end:Menu link-->
+			</div>
+			<!--end:Menu item-->
+			
+			<!--begin:Menu item-->
+			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('qr-code.*') ? 'here show' : '' }}">
+				<!--begin:Menu link-->
+				<span class="menu-link">
 					<span class="menu-icon">
 						<i class="ki-solid ki-scan-barcode fs-2"></i>
+					</span>
+					<span class="menu-title">{{ __('common.qr_code_management') }}</span>
+					<span class="menu-arrow"></span>
+				</span>
+				<!--end:Menu link-->
+				<!--begin:Menu sub-->
+				<div class="menu-sub menu-sub-accordion">
+					<!--begin:Menu item-->
+					<div class="menu-item">
+						<!--begin:Menu link-->
+						<a class="menu-link {{ request()->routeIs('qr-code.index') ? 'active' : '' }}" href="{{ route('qr-code.index') }}">
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
 					</span>
 					<span class="menu-title">{{ __('common.qr_code_list') }}</span>
 				</a>
@@ -30,32 +55,25 @@
 			<div class="menu-item">
 				<!--begin:Menu link-->
 				<a class="menu-link {{ request()->routeIs('qr-code.create') ? 'active' : '' }}" href="{{ route('qr-code.create') }}">
-					<span class="menu-icon">
-						<i class="ki-solid ki-plus-circle fs-2"></i>
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
 					</span>
 					<span class="menu-title">{{ __('common.create_qr_code') }}</span>
 				</a>
 				<!--end:Menu link-->
 			</div>
 			<!--end:Menu item-->
-			<!--begin:Menu item-->
-			<div class="menu-item">
-				<!--begin:Menu link-->
-				<a class="menu-link {{ request()->routeIs('media-library.*') ? 'active' : '' }}" href="{{ route('media-library.index') }}">
-					<span class="menu-icon">{!! getIcon('picture', 'fs-2') !!}</span>
-					<span class="menu-title">{{ __('common.media_library') }}</span>
-				</a>
-				<!--end:Menu link-->
+				</div>
+				<!--end:Menu sub-->
 			</div>
 			<!--end:Menu item-->
+			
 			<!--begin:Menu item-->
-			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('categories.*') ? 'here show' : '' }}">
+			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('short-link.*') ? 'here show' : '' }}">
 				<!--begin:Menu link-->
 				<span class="menu-link">
-					<span class="menu-icon">
-						<i class="ki-solid ki-category fs-2"></i>
-					</span>
-					<span class="menu-title">{{ __('common.category_management') }}</span>
+					<span class="menu-icon">{!! getIcon('disconnect', 'fs-2') !!}</span>
+					<span class="menu-title">{{ __('common.short_link') }}</span>
 					<span class="menu-arrow"></span>
 				</span>
 				<!--end:Menu link-->
@@ -64,11 +82,11 @@
 					<!--begin:Menu item-->
 					<div class="menu-item">
 						<!--begin:Menu link-->
-						<a class="menu-link {{ request()->routeIs('categories.index') ? 'active' : '' }}" href="{{ route('categories.index') }}">
+						<a class="menu-link {{ request()->routeIs('short-link.index') ? 'active' : '' }}" href="{{ route('short-link.index') }}">
 							<span class="menu-bullet">
 								<span class="bullet bullet-dot"></span>
 							</span>
-							<span class="menu-title">{{ __('common.categories') }}</span>
+							<span class="menu-title">{{ __('common.short_link_list') }}</span>
 						</a>
 						<!--end:Menu link-->
 					</div>
@@ -76,11 +94,11 @@
 					<!--begin:Menu item-->
 					<div class="menu-item">
 						<!--begin:Menu link-->
-						<a class="menu-link {{ request()->routeIs('categories.create') ? 'active' : '' }}" href="{{ route('categories.create') }}">
+						<a class="menu-link {{ request()->routeIs('short-link.create') ? 'active' : '' }}" href="{{ route('short-link.create') }}">
 							<span class="menu-bullet">
 								<span class="bullet bullet-dot"></span>
 							</span>
-							<span class="menu-title">{{ __('common.add_category') }}</span>
+							<span class="menu-title">{{ __('common.create_short_link') }}</span>
 						</a>
 						<!--end:Menu link-->
 					</div>
@@ -89,6 +107,49 @@
 				<!--end:Menu sub-->
 			</div>
 			<!--end:Menu item-->
+			
+			<!--begin:Menu item-->
+			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('brochure.*') ? 'here show' : '' }}">
+				<!--begin:Menu link-->
+				<span class="menu-link">
+					<span class="menu-icon">
+						<i class="ki-solid ki-document fs-2"></i>
+					</span>
+					<span class="menu-title">{{ __('common.brochure') }}</span>
+					<span class="menu-arrow"></span>
+				</span>
+				<!--end:Menu link-->
+				<!--begin:Menu sub-->
+				<div class="menu-sub menu-sub-accordion">
+					<!--begin:Menu item-->
+					<div class="menu-item">
+						<!--begin:Menu link-->
+						<a class="menu-link {{ request()->routeIs('brochure.index') ? 'active' : '' }}" href="{{ route('brochure.index') }}">
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
+							</span>
+							<span class="menu-title">{{ __('common.brochure_list') }}</span>
+						</a>
+						<!--end:Menu link-->
+					</div>
+					<!--end:Menu item-->
+					<!--begin:Menu item-->
+					<div class="menu-item">
+						<!--begin:Menu link-->
+						<a class="menu-link {{ request()->routeIs('brochure.create') ? 'active' : '' }}" href="{{ route('brochure.create') }}">
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
+							</span>
+							<span class="menu-title">{{ __('common.create_brochure') }}</span>
+						</a>
+						<!--end:Menu link-->
+					</div>
+					<!--end:Menu item-->
+				</div>
+				<!--end:Menu sub-->
+			</div>
+			<!--end:Menu item-->
+			
 			<!--begin:Menu item-->
 			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('v-card.*') ? 'here show' : '' }}">
 				<!--begin:Menu link-->
@@ -142,14 +203,15 @@
 				<!--end:Menu sub-->
 			</div>
 			<!--end:Menu item-->
+			
 			<!--begin:Menu item-->
-			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('brochure.*') ? 'here show' : '' }}">
+			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('categories.*') ? 'here show' : '' }}">
 				<!--begin:Menu link-->
 				<span class="menu-link">
 					<span class="menu-icon">
-						<i class="ki-solid ki-document fs-2"></i>
+						<i class="ki-solid ki-category fs-2"></i>
 					</span>
-					<span class="menu-title">{{ __('common.brochure') }}</span>
+					<span class="menu-title">{{ __('common.category_management') }}</span>
 					<span class="menu-arrow"></span>
 				</span>
 				<!--end:Menu link-->
@@ -158,11 +220,11 @@
 					<!--begin:Menu item-->
 					<div class="menu-item">
 						<!--begin:Menu link-->
-						<a class="menu-link {{ request()->routeIs('brochure.index') ? 'active' : '' }}" href="{{ route('brochure.index') }}">
+						<a class="menu-link {{ request()->routeIs('categories.index') ? 'active' : '' }}" href="{{ route('categories.index') }}">
 							<span class="menu-bullet">
 								<span class="bullet bullet-dot"></span>
 							</span>
-							<span class="menu-title">{{ __('common.brochure_list') }}</span>
+							<span class="menu-title">{{ __('common.categories') }}</span>
 						</a>
 						<!--end:Menu link-->
 					</div>
@@ -170,11 +232,11 @@
 					<!--begin:Menu item-->
 					<div class="menu-item">
 						<!--begin:Menu link-->
-						<a class="menu-link {{ request()->routeIs('brochure.create') ? 'active' : '' }}" href="{{ route('brochure.create') }}">
+						<a class="menu-link {{ request()->routeIs('categories.create') ? 'active' : '' }}" href="{{ route('categories.create') }}">
 							<span class="menu-bullet">
 								<span class="bullet bullet-dot"></span>
 							</span>
-							<span class="menu-title">{{ __('common.create_brochure') }}</span>
+							<span class="menu-title">{{ __('common.add_category') }}</span>
 						</a>
 						<!--end:Menu link-->
 					</div>
@@ -183,9 +245,20 @@
 				<!--end:Menu sub-->
 			</div>
 			<!--end:Menu item-->
+			
 			<!--begin:Menu item-->
-			@if(auth()->user()->hasRole('superadmin'))
-			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('settings.*') || request()->routeIs('user-management.*') ? 'here show' : '' }}">
+			<div class="menu-item">
+				<!--begin:Menu link-->
+				<a class="menu-link {{ request()->routeIs('media-library.*') ? 'active' : '' }}" href="{{ route('media-library.index') }}">
+					<span class="menu-icon">{!! getIcon('picture', 'fs-2') !!}</span>
+					<span class="menu-title">{{ __('common.media_library') }}</span>
+				</a>
+				<!--end:Menu link-->
+			</div>
+			<!--end:Menu item-->
+			
+			<!--begin:Menu item-->
+			<div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs('settings.*') || request()->routeIs('user-management.*') || request()->routeIs('api-tokens.*') ? 'here show' : '' }}">
 				<!--begin:Menu link-->
 				<span class="menu-link">
 					<span class="menu-icon">{!! getIcon('setting-2', 'fs-2') !!}</span>
@@ -195,6 +268,7 @@
 				<!--end:Menu link-->
 				<!--begin:Menu sub-->
 				<div class="menu-sub menu-sub-accordion">
+					@if(auth()->user()->hasRole('superadmin'))
 					<!--begin:Menu item-->
 					<div class="menu-item">
 						<!--begin:Menu link-->
@@ -219,11 +293,23 @@
 						<!--end:Menu link-->
 					</div>
 					<!--end:Menu item-->
+					@endif
+					<!--begin:Menu item-->
+					<div class="menu-item">
+						<!--begin:Menu link-->
+						<a class="menu-link {{ request()->routeIs('api-tokens.*') ? 'active' : '' }}" href="{{ route('api-tokens.index') }}">
+							<span class="menu-bullet">
+								<span class="bullet bullet-dot"></span>
+							</span>
+							<span class="menu-title">{{ __('common.api_tokens') }}</span>
+						</a>
+						<!--end:Menu link-->
+					</div>
+					<!--end:Menu item-->
 				</div>
 				<!--end:Menu sub-->
 			</div>
 			<!--end:Menu item-->
-			@endif
 		</div>
 		<!--end::Menu-->
 	</div>

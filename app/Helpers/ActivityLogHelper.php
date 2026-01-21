@@ -152,5 +152,30 @@ class ActivityLogHelper
             ])
         );
     }
+
+    /**
+     * Log Short Link operations
+     */
+    public static function logShortLink($action, $shortLink, $details = [])
+    {
+        $name = $shortLink->title ?? $shortLink->short_code;
+        
+        $descriptions = [
+            'created' => "Link kısaltıldı: {$name}",
+            'updated' => "Link güncellendi: {$name}",
+            'deleted' => "Link silindi: {$name}",
+        ];
+
+        self::log(
+            $descriptions[$action] ?? "Link işlemi: {$name}",
+            $shortLink,
+            $action,
+            array_merge($details, [
+                'short_link_title' => $shortLink->title,
+                'short_code' => $shortLink->short_code,
+                'original_url' => $shortLink->original_url,
+            ])
+        );
+    }
 }
 

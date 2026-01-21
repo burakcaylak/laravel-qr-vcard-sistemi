@@ -16,16 +16,53 @@
                 <!--begin::Search-->
                 <div class="d-flex align-items-center position-relative my-1">
                     {!! getIcon('magnifier', 'fs-3 position-absolute ms-5') !!}
-                    <input type="text" id="brochure_search" class="form-control form-control-solid w-250px ps-13" placeholder="{{ __('common.search') }}..."/>
+                    <input type="text" data-kt-brochure-table-filter="search" class="form-control form-control-solid w-250px ps-13" placeholder="{{ __('common.search') }}..." id="mySearchInput"/>
                 </div>
                 <!--end::Search-->
+                <!--begin::Filters-->
+                <div class="d-flex align-items-center gap-2 ms-5">
+                    <select class="form-select form-select-sm w-150px" id="filter-status">
+                        <option value="">{{ __('common.all_status') }}</option>
+                        <option value="active">{{ __('common.active') }}</option>
+                        <option value="inactive">{{ __('common.inactive') }}</option>
+                        <option value="expired">{{ __('common.expired') }}</option>
+                    </select>
+                    <select class="form-select form-select-sm w-150px" id="filter-category">
+                        <option value="">{{ __('common.all_categories') }}</option>
+                        @foreach(\App\Models\Category::where('is_active', true)->orderBy('name')->get() as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                    <input type="date" class="form-control form-control-sm w-150px" id="filter-date-from" placeholder="{{ __('common.date_from') }}">
+                    <input type="date" class="form-control form-control-sm w-150px" id="filter-date-to" placeholder="{{ __('common.date_to') }}">
+                    <button type="button" class="btn btn-sm btn-light" id="filter-apply">
+                        {{ __('common.filter') }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light" id="filter-clear">
+                        {{ __('common.clear') }}
+                    </button>
+                </div>
+                <!--end::Filters-->
             </div>
-            <!--end::Card title-->
+            <!--begin::Card title-->
 
             <!--begin::Card toolbar-->
             <div class="card-toolbar">
                 <!--begin::Toolbar-->
-                <div class="d-flex justify-content-end">
+                <div class="d-flex justify-content-end gap-2" data-kt-brochure-table-toolbar="base">
+                    <!--begin::Bulk Actions-->
+                    <div class="d-none d-flex align-items-center gap-2" id="bulk-actions-container">
+                        <select class="form-select form-select-sm w-150px" id="bulk-action-select">
+                            <option value="">{{ __('common.select_action') }}</option>
+                            <option value="activate">{{ __('common.activate') }}</option>
+                            <option value="deactivate">{{ __('common.deactivate') }}</option>
+                            <option value="delete">{{ __('common.delete') }}</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-primary" id="bulk-action-btn">
+                            {{ __('common.apply') }}
+                        </button>
+                    </div>
+                    <!--end::Bulk Actions-->
                     <!--begin::Add Brochure-->
                     <a href="{{ route('brochure.create') }}" class="btn btn-primary">
                         <i class="ki-solid ki-document fs-2"></i>
@@ -43,123 +80,169 @@
         <div class="card-body py-4">
             <!--begin::Table-->
             <div class="table-responsive">
-                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
-                    <thead>
-                        <tr class="fw-bold text-muted">
-                            <th class="min-w-80px">{{ __('common.qr_code') }}</th>
-                            <th class="min-w-150px">{{ __('common.name') }}</th>
-                            <th class="min-w-150px">{{ __('common.category') }}</th>
-                            <th class="min-w-100px">{{ __('common.background') }}</th>
-                            <th class="min-w-100px">{{ __('common.status') }}</th>
-                            <th class="min-w-100px">{{ __('common.view_count') }}</th>
-                            <th class="min-w-100px text-end">{{ __('common.actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($brochures as $brochure)
-                            <tr>
-                                <td>
-                                    @if($brochure->qr_code_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($brochure->qr_code_path))
-                                        <a href="{{ route('brochure.download', $brochure) }}" class="d-inline-block" title="{{ __('common.download_qr_code') }}" download>
-                                            <img src="{{ asset('storage/' . $brochure->qr_code_path) }}" alt="QR Code" class="w-50px h-50px" style="cursor: pointer; object-fit: contain;">
-                                        </a>
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="text-dark fw-bold text-hover-primary d-block fs-6">
-                                        {{ $brochure->name }}
-                                    </span>
-                                    @if($brochure->description)
-                                        <span class="text-muted fw-semibold text-muted d-block fs-7 mt-1">
-                                            {{ Str::limit($brochure->description, 50) }}
-                                        </span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="text-muted fw-semibold text-muted d-block fs-7">
-                                        {{ $brochure->category->name ?? '-' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    @if($brochure->background_type === 'image' && $brochure->background_image_path)
-                                        <span class="badge badge-light-info">{{ __('common.image') }}</span>
-                                    @else
-                                        <div class="d-flex align-items-center">
-                                            <span class="badge badge-light-primary me-2">{{ __('common.color') }}</span>
-                                            <div style="width: 20px; height: 20px; background-color: {{ $brochure->background_color ?? '#ffffff' }}; border: 1px solid #ddd; border-radius: 3px;"></div>
-                                        </div>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($brochure->is_expired)
-                                        <span class="badge badge-light-danger">{{ __('common.expired') }}</span>
-                                    @elseif($brochure->is_active)
-                                        <span class="badge badge-light-success">{{ __('common.active') }}</span>
-                                    @else
-                                        <span class="badge badge-light-secondary">{{ __('common.inactive') }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="text-muted fw-semibold text-muted d-block fs-7">
-                                        {{ $brochure->view_count }}
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    <a href="{{ route('brochure.show', $brochure) }}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
-                                        {!! getIcon('eye', 'fs-2') !!}
-                                    </a>
-                                    <a href="{{ route('brochure.edit', $brochure) }}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
-                                        {!! getIcon('pencil', 'fs-2') !!}
-                                    </a>
-                                    <form action="{{ route('brochure.destroy', $brochure) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('common.delete_brochure_confirm') }}');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm">
-                                            {!! getIcon('trash', 'fs-2') !!}
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-10">
-                                    <span class="text-muted">{{ __('common.no_data') }}</span>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                {{ $dataTable->table() }}
             </div>
             <!--end::Table-->
-            
-            @if($brochures->hasPages())
-                <div class="d-flex justify-content-between align-items-center mt-5">
-                    <div class="text-muted">
-                        {{ __('common.showing') }} {{ $brochures->firstItem() }} {{ __('common.to') }} {{ $brochures->lastItem() }} {{ __('common.of') }} {{ $brochures->total() }} {{ __('common.results') }}
-                    </div>
-                    <div>
-                        {{ $brochures->links() }}
-                    </div>
-                </div>
-            @endif
         </div>
         <!--end::Card body-->
     </div>
 
     @push('scripts')
-    <script>
-        document.getElementById('brochure_search').addEventListener('keyup', function () {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
+        {{ $dataTable->scripts() }}
+        <script>
+            const table = window.LaravelDataTables['brochures-table'];
             
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            document.getElementById('mySearchInput').addEventListener('keyup', function () {
+                table.search(this.value).draw();
             });
-        });
-    </script>
+
+            // Filtreleme
+            document.getElementById('filter-apply').addEventListener('click', function() {
+                const status = document.getElementById('filter-status').value;
+                const category = document.getElementById('filter-category').value;
+                const dateFrom = document.getElementById('filter-date-from').value;
+                const dateTo = document.getElementById('filter-date-to').value;
+                
+                table.ajax.url('{{ route('brochure.index') }}?filter_status=' + status + '&filter_category=' + category + '&filter_date_from=' + dateFrom + '&filter_date_to=' + dateTo).load();
+            });
+
+            document.getElementById('filter-clear').addEventListener('click', function() {
+                document.getElementById('filter-status').value = '';
+                document.getElementById('filter-category').value = '';
+                document.getElementById('filter-date-from').value = '';
+                document.getElementById('filter-date-to').value = '';
+                table.ajax.url('{{ route('brochure.index') }}').load();
+            });
+
+            // İlk yüklemede menüyü başlat
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof KTMenu !== 'undefined') {
+                    KTMenu.createInstances();
+                }
+
+                // Toplu işlemler
+                const bulkActionsContainer = document.getElementById('bulk-actions-container');
+                const bulkActionSelect = document.getElementById('bulk-action-select');
+                const bulkActionBtn = document.getElementById('bulk-action-btn');
+                const table = window.LaravelDataTables['brochures-table'];
+
+                // Checkbox durumunu güncelle
+                function updateCheckboxState() {
+                    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-brochure-id]');
+                    const selectAll = document.getElementById('select-all');
+                    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                    const totalCount = checkboxes.length;
+                    
+                    // Bulk actions container'ı göster/gizle
+                    if (checkedCount > 0) {
+                        bulkActionsContainer.classList.remove('d-none');
+                    } else {
+                        bulkActionsContainer.classList.add('d-none');
+                    }
+                    
+                    // Select all checkbox durumunu güncelle
+                    if (selectAll && totalCount > 0) {
+                        if (checkedCount === 0) {
+                            selectAll.checked = false;
+                            selectAll.indeterminate = false;
+                        } else if (checkedCount === totalCount) {
+                            selectAll.checked = true;
+                            selectAll.indeterminate = false;
+                        } else {
+                            selectAll.checked = false;
+                            selectAll.indeterminate = true;
+                        }
+                    }
+                }
+
+                // Checkbox değişikliklerini dinle
+                table.on('draw', function() {
+                    updateCheckboxState();
+                    
+                    // Individual checkbox'lara event listener ekle
+                    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-brochure-id]');
+                    checkboxes.forEach(function(checkbox) {
+                        checkbox.addEventListener('change', updateCheckboxState);
+                    });
+                });
+                
+                // İlk yüklemede de çalıştır
+                updateCheckboxState();
+
+                // Toplu işlem butonu
+                bulkActionBtn.addEventListener('click', function() {
+                    const action = bulkActionSelect.value;
+                    if (!action) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '{{ __('common.select_action') }}',
+                            text: '{{ __('common.please_select_action') }}'
+                        });
+                        return;
+                    }
+
+                    const checkedBoxes = document.querySelectorAll('input[type="checkbox"][data-brochure-id]:checked');
+                    const ids = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-brochure-id'));
+
+                    if (ids.length === 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '{{ __('common.no_selection') }}',
+                            text: '{{ __('common.please_select_items') }}'
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: '{{ __('common.are_you_sure') }}',
+                        text: '{{ __('common.bulk_action_confirm') }}',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '{{ __('common.apply') }}',
+                        cancelButtonText: '{{ __('common.cancel') }}'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('{{ route('brochure.bulk-action') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({
+                                    action: action,
+                                    ids: ids
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: '{{ __('common.success') }}',
+                                        text: data.message || '{{ __('common.bulk_action_success') }}',
+                                        timer: 2000
+                                    });
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: '{{ __('common.error') }}',
+                                        text: data.message || '{{ __('common.bulk_action_error') }}'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: '{{ __('common.error') }}',
+                                    text: '{{ __('common.bulk_action_error') }}'
+                                });
+                            });
+                        }
+                    });
+                });
+            });
+        </script>
     @endpush
 
 </x-default-layout>

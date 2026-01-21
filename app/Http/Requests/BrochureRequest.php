@@ -32,6 +32,8 @@ class BrochureRequest extends FormRequest
             'background_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'is_active' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:today'],
+            'password' => ['nullable', 'string', 'min:4', 'max:255'],
+            'password_protected' => ['nullable', 'boolean'],
         ];
 
         // Create için PDF dosyası zorunlu (file_id veya pdf_file)

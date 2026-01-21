@@ -31,13 +31,17 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="text-center mb-10">
-                        @if($qrCode->file_path)
+                        @if($qrCode->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($qrCode->file_path))
                             <img src="{{ asset('storage/' . $qrCode->file_path) }}" alt="QR Kod" class="img-fluid" style="max-width: 300px;">
+                        @else
+                            <div class="alert alert-warning">
+                                <p class="mb-0">{{ __('common.qr_code_not_generated') }}</p>
+                            </div>
                         @endif
                     </div>
                     <div class="text-center">
-                        <p class="text-muted">Token: <code>{{ $qrCode->token }}</code></p>
-                        <p class="text-muted">URL: <a href="{{ $qrCode->qr_url }}" target="_blank">{{ $qrCode->qr_url }}</a></p>
+                        <p class="text-muted mb-2">Token: <code class="fs-6">{{ $qrCode->token }}</code></p>
+                        <p class="text-muted mb-0">URL: <a href="{{ $qrCode->qr_url }}" target="_blank" class="text-break d-inline-block" style="max-width: 100%; word-break: break-all;">{{ $qrCode->qr_url }}</a></p>
                     </div>
                 </div>
                 <div class="col-md-6">

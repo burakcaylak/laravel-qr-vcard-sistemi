@@ -147,6 +147,14 @@
                         </div>
                         <!--end::Footer Text-->
 
+                        <!--begin::Short Link Domain-->
+                        <div class="mb-10">
+                            <label class="form-label fw-bold">{{ __('common.short_link_domain') }}</label>
+                            <input type="text" name="short_link_domain" class="form-control form-control-solid" value="{{ old('short_link_domain', $settings->short_link_domain) }}" placeholder="kisa.link">
+                            <div class="form-text">{{ __('common.short_link_domain_desc') }}</div>
+                        </div>
+                        <!--end::Short Link Domain-->
+
                         <!--begin::Actions-->
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary">

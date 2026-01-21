@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Helpers\CacheHelper;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -12,12 +13,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = \Illuminate\Support\Facades\Cache::remember('categories.active', 3600, function () {
-            return Category::where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get();
-        });
+        $categories = CacheHelper::getActiveCategories();
             
         return view('pages.categories.index', compact('categories'));
     }
@@ -46,7 +42,7 @@ class CategoryController extends Controller
         $category = Category::create($validated);
         
         // Cache'i temizle
-        \Illuminate\Support\Facades\Cache::forget('categories.active');
+        CacheHelper::clearCategoryCache();
 
         if ($request->expectsJson() || $request->wantsJson()) {
             return response()->json([
@@ -93,7 +89,7 @@ class CategoryController extends Controller
         $category->update($validated);
         
         // Cache'i temizle
-        \Illuminate\Support\Facades\Cache::forget('categories.active');
+        CacheHelper::clearCategoryCache();
 
         return redirect()->route('categories.index')
             ->with('success', __('common.category_updated'));
@@ -107,7 +103,7 @@ class CategoryController extends Controller
         $category->delete();
         
         // Cache'i temizle
-        \Illuminate\Support\Facades\Cache::forget('categories.active');
+        CacheHelper::clearCategoryCache();
 
         return redirect()->route('categories.index')
             ->with('success', __('common.category_deleted'));

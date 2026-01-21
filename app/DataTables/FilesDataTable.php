@@ -19,7 +19,10 @@ class FilesDataTable extends DataTable
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
         return (new EloquentDataTable($query))
-            ->rawColumns(['file', 'type', 'actions'])
+            ->rawColumns(['checkbox', 'file', 'type', 'actions'])
+            ->addColumn('checkbox', function (File $file) {
+                return '<input type="checkbox" class="form-check-input" data-file-id="' . $file->id . '">';
+            })
             ->editColumn('file', function (File $file) {
                 return view('pages.file-management.columns._file', compact('file'));
             })
@@ -65,8 +68,32 @@ class FilesDataTable extends DataTable
      */
     public function query(File $model): QueryBuilder
     {
-        return $model->newQuery()
-            ->with('user'); // Tüm dosyaları göster
+        $query = $model->newQuery()
+            ->with('user');
+
+        // Filtreleme
+        if (request()->has('filter_status')) {
+            $status = request()->get('filter_status');
+            if ($status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        if (request()->has('filter_category') && request()->get('filter_category')) {
+            $query->where('category_id', request()->get('filter_category'));
+        }
+
+        if (request()->has('filter_date_from') && request()->get('filter_date_from')) {
+            $query->whereDate('created_at', '>=', request()->get('filter_date_from'));
+        }
+
+        if (request()->has('filter_date_to') && request()->get('filter_date_to')) {
+            $query->whereDate('created_at', '<=', request()->get('filter_date_to'));
+        }
+
+        return $query;
     }
 
     /**
@@ -77,11 +104,11 @@ class FilesDataTable extends DataTable
         return $this->builder()
             ->setTableId('files-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax(url()->current() . '?' . http_build_query(request()->only(['filter_status', 'filter_category', 'filter_date_from', 'filter_date_to'])))
             ->dom('rt' . "<'row'<'col-sm-12'tr>><'d-flex justify-content-between'<'col-sm-12 col-md-5'i><'d-flex justify-content-between'p>>",)
             ->addTableClass('table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer text-gray-600 fw-semibold')
             ->setTableHeadClass('text-start text-muted fw-bold fs-7 text-uppercase gs-0')
-            ->orderBy(6)
+            ->orderBy(7)
             ->language([
                 'info' => __('common.datatable_info'),
                 'infoEmpty' => __('common.datatable_info_empty'),
@@ -98,7 +125,36 @@ class FilesDataTable extends DataTable
                     'previous' => __('common.datatable_previous'),
                 ],
             ])
-            ->drawCallback("function() {" . (file_exists(resource_path('views/pages/file-management/columns/_draw-scripts.js')) ? file_get_contents(resource_path('views/pages/file-management/columns/_draw-scripts.js')) : '') . "}");
+            ->drawCallback("function() {
+                // Menüyü yeniden başlat
+                if (typeof KTMenu !== 'undefined') {
+                    KTMenu.createInstances();
+                }
+                
+                // Tümünü seç checkbox
+                var selectAll = document.getElementById('select-all');
+                if (selectAll) {
+                    // Önceki listener'ı kaldır ve yeni ekle
+                    var newSelectAll = selectAll.cloneNode(true);
+                    selectAll.parentNode.replaceChild(newSelectAll, selectAll);
+                    
+                    newSelectAll.addEventListener('change', function() {
+                        var checkboxes = document.querySelectorAll('input[type=\"checkbox\"][data-file-id]');
+                        checkboxes.forEach(function(cb) {
+                            cb.checked = newSelectAll.checked;
+                        });
+                        // Bulk actions container'ı göster/gizle
+                        var bulkContainer = document.getElementById('bulk-actions-container');
+                        if (bulkContainer) {
+                            if (newSelectAll.checked && checkboxes.length > 0) {
+                                bulkContainer.classList.remove('d-none');
+                            } else {
+                                bulkContainer.classList.add('d-none');
+                            }
+                        }
+                    });
+                }
+            }");
     }
 
     /**
@@ -107,6 +163,14 @@ class FilesDataTable extends DataTable
     public function getColumns(): array
     {
         return [
+            Column::computed('checkbox')
+                ->title('<input type="checkbox" class="form-check-input" id="select-all">')
+                ->addClass('text-center')
+                ->orderable(false)
+                ->searchable(false)
+                ->width(30)
+                ->exportable(false)
+                ->printable(false),
             Column::make('file')->title(__('common.file'))->addClass('d-flex align-items-center')->name('name'),
             Column::make('type')->title(__('common.type'))->searchable(false),
             Column::make('size')->title(__('common.file_size'))->searchable(false),

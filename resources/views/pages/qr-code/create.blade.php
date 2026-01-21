@@ -329,6 +329,27 @@
                     </div>
                 </div>
 
+                <!-- Password Protection -->
+                <div class="separator separator-dashed my-5"></div>
+                <h4 class="fw-bold mb-5">{{ __('common.password_protection') }}</h4>
+                <div class="mb-5">
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input class="form-check-input" type="checkbox" name="password_protected" id="password_protected" value="1" {{ old('password_protected') ? 'checked' : '' }}>
+                        <label class="form-check-label" for="password_protected">
+                            {{ __('common.password_protected') }}
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">{{ __('common.password_protected_link_hint') }}</small>
+                </div>
+                <div class="mb-5" id="password_field" style="display: {{ old('password_protected') ? 'block' : 'none' }};">
+                    <label class="form-label {{ old('password_protected') ? 'required' : '' }}">{{ __('common.password') }}</label>
+                    <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ __('common.password') }}">
+                    @error('password')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <!-- End Password Protection -->
+
                 <div class="d-flex justify-content-end">
                     <a href="{{ route('qr-code.index') }}" class="btn btn-light me-3">{{ __('common.cancel') }}</a>
                     <button type="submit" class="btn btn-primary">{{ __('common.create') }}</button>
@@ -558,6 +579,21 @@
             if (form) {
                 form.addEventListener('submit', function(e) {
                     const qrType = document.getElementById('qr_type').value;
+                    
+                    // File tipi için file_id kontrolü
+                    if (qrType === 'file') {
+                        const fileIdInput = document.getElementById('file_id_input');
+                        if (!fileIdInput || !fileIdInput.value) {
+                            e.preventDefault();
+                            Swal.fire({
+                                icon: 'error',
+                                title: getTranslation('common.error'),
+                                text: getTranslation('common.file_id_required')
+                            });
+                            return false;
+                        }
+                    }
+                    
                     if (qrType === 'multi_file') {
                         const fileInputs = document.querySelectorAll('input[name="file_ids[]"]');
                         const buttonInputs = document.querySelectorAll('input[name="button_names[]"]');
@@ -1548,6 +1584,30 @@
                     console.error('Error:', error);
                     alert(getTranslation('common.category_create_error_message') + ': ' + error.message);
                 });
+            }
+
+            // Password protection toggle
+            const passwordProtectedCheckbox = document.getElementById('password_protected');
+            const passwordField = document.getElementById('password_field');
+
+            function togglePasswordField() {
+                if (passwordProtectedCheckbox && passwordField) {
+                    if (passwordProtectedCheckbox.checked) {
+                        passwordField.style.display = 'block';
+                        const label = passwordField.querySelector('label');
+                        if (label) label.classList.add('required');
+                    } else {
+                        passwordField.style.display = 'none';
+                        const label = passwordField.querySelector('label');
+                        if (label) label.classList.remove('required');
+                        passwordField.querySelector('input[name="password"]').value = '';
+                    }
+                }
+            }
+
+            if (passwordProtectedCheckbox) {
+                passwordProtectedCheckbox.addEventListener('change', togglePasswordField);
+                togglePasswordField(); // Initial call
             }
         </script>
     @endpush

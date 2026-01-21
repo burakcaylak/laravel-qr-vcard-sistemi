@@ -14,6 +14,7 @@ class Settings extends Model
         'index_enabled',
         'language',
         'footer_text',
+        'short_link_domain',
     ];
 
     protected $casts = [

@@ -19,7 +19,10 @@ class QrCodesDataTable extends DataTable
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
         return (new EloquentDataTable($query))
-            ->rawColumns(['qr', 'type', 'status', 'scan_count', 'actions'])
+            ->rawColumns(['checkbox', 'qr', 'type', 'status', 'scan_count', 'actions'])
+            ->addColumn('checkbox', function (QrCode $qrCode) {
+                return '<input type="checkbox" class="form-check-input" data-qr-code-id="' . $qrCode->id . '">';
+            })
             ->editColumn('qr', function (QrCode $qrCode) {
                 return view('pages.qr-code.columns._qr', compact('qrCode'));
             })
@@ -80,8 +83,36 @@ class QrCodesDataTable extends DataTable
      */
     public function query(QrCode $model): QueryBuilder
     {
-        return $model->newQuery()
-            ->with(['user', 'file', 'category']); // Tüm QR kodları göster
+        $query = $model->newQuery()
+            ->with(['user', 'file', 'category']);
+
+        // Filtreleme
+        if (request()->has('filter_status')) {
+            $status = request()->get('filter_status');
+            if ($status === 'active') {
+                $query->where('is_active', true)->where(function($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                });
+            } elseif ($status === 'inactive') {
+                $query->where('is_active', false);
+            } elseif ($status === 'expired') {
+                $query->where('expires_at', '<=', now());
+            }
+        }
+
+        if (request()->has('filter_category') && request()->get('filter_category')) {
+            $query->where('category_id', request()->get('filter_category'));
+        }
+
+        if (request()->has('filter_date_from') && request()->get('filter_date_from')) {
+            $query->whereDate('created_at', '>=', request()->get('filter_date_from'));
+        }
+
+        if (request()->has('filter_date_to') && request()->get('filter_date_to')) {
+            $query->whereDate('created_at', '<=', request()->get('filter_date_to'));
+        }
+
+        return $query;
     }
 
     /**
@@ -92,11 +123,11 @@ class QrCodesDataTable extends DataTable
         return $this->builder()
             ->setTableId('qr-codes-table')
             ->columns($this->getColumns())
-            ->minifiedAjax()
+            ->minifiedAjax(url()->current() . '?' . http_build_query(request()->only(['filter_status', 'filter_category', 'filter_date_from', 'filter_date_to'])))
             ->dom('rt' . "<'row'<'col-sm-12'tr>><'d-flex justify-content-between'<'col-sm-12 col-md-5'i><'d-flex justify-content-between'p>>",)
             ->addTableClass('table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer text-gray-600 fw-semibold')
             ->setTableHeadClass('text-start text-muted fw-bold fs-7 text-uppercase gs-0')
-            ->orderBy(7, 'desc') // created_at kolonuna göre sırala
+            ->orderBy(8, 'desc') // created_at kolonuna göre sırala
             ->language([
                 'info' => __('common.datatable_info'),
                 'infoEmpty' => __('common.datatable_info_empty'),
@@ -113,7 +144,36 @@ class QrCodesDataTable extends DataTable
                     'previous' => __('common.datatable_previous')
                 ]
             ])
-            ->drawCallback("function() {" . (file_exists(resource_path('views/pages/qr-code/columns/_draw-scripts.js')) ? file_get_contents(resource_path('views/pages/qr-code/columns/_draw-scripts.js')) : '') . "}");
+            ->drawCallback("function() {
+                // Menüyü yeniden başlat
+                if (typeof KTMenu !== 'undefined') {
+                    KTMenu.createInstances();
+                }
+                
+                // Tümünü seç checkbox
+                var selectAll = document.getElementById('select-all');
+                if (selectAll) {
+                    // Önceki listener'ı kaldır ve yeni ekle
+                    var newSelectAll = selectAll.cloneNode(true);
+                    selectAll.parentNode.replaceChild(newSelectAll, selectAll);
+                    
+                    newSelectAll.addEventListener('change', function() {
+                        var checkboxes = document.querySelectorAll('input[type=\"checkbox\"][data-qr-code-id]');
+                        checkboxes.forEach(function(cb) {
+                            cb.checked = newSelectAll.checked;
+                        });
+                        // Bulk actions container'ı göster/gizle
+                        var bulkContainer = document.getElementById('bulk-actions-container');
+                        if (bulkContainer) {
+                            if (newSelectAll.checked && checkboxes.length > 0) {
+                                bulkContainer.classList.remove('d-none');
+                            } else {
+                                bulkContainer.classList.add('d-none');
+                            }
+                        }
+                    });
+                }
+            }");
     }
 
     /**
@@ -122,12 +182,20 @@ class QrCodesDataTable extends DataTable
     public function getColumns(): array
     {
         return [
+            Column::computed('checkbox')
+                ->title('<input type="checkbox" class="form-check-input" id="select-all">')
+                ->addClass('text-center')
+                ->orderable(false)
+                ->searchable(false)
+                ->width(30)
+                ->exportable(false)
+                ->printable(false),
             Column::make('qr')->addClass('d-flex align-items-center')->name('name'),
             Column::make('category')->title(__('common.category')),
             Column::make('requested_by')->title(__('common.requested_by')),
             Column::make('request_date')->title(__('common.request_date')),
             Column::make('type')->title(__('common.type'))->searchable(false)->orderable(false),
-            Column::make('scan_count')->title(__('common.scan_count'))->searchable(false),
+            Column::make('scan_count')->title(__('common.scan_count'))->searchable(false)->orderable(true),
             Column::make('status')->title(__('common.status'))->searchable(false)->orderable(true)->name('is_active'),
             Column::make('created_at')->title(__('common.created_at'))->addClass('text-nowrap'),
             Column::computed('actions')

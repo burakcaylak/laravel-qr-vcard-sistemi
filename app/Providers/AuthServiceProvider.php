@@ -16,6 +16,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\File::class => \App\Policies\FilePolicy::class,
         \App\Models\QrCode::class => \App\Policies\QrCodePolicy::class,
         \App\Models\VCardTemplate::class => \App\Policies\VCardTemplatePolicy::class,
+        \App\Models\ShortLink::class => \App\Policies\ShortLinkPolicy::class,
     ];
 
     /**

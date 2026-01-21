@@ -16,6 +16,36 @@ Breadcrumbs::for('dashboard', function (BreadcrumbTrail $trail) {
     $trail->push(__('common.dashboard'), route('dashboard'));
 });
 
+// Ana Sayfa > Başlangıç > Analitik & Raporlama
+Breadcrumbs::for('analytics.index', function (BreadcrumbTrail $trail) {
+    $trail->parent('dashboard');
+    $trail->push(__('common.analytics'), route('analytics.index'));
+});
+
+// Ana Sayfa > Başlangıç > Analitik & Raporlama > ShortLink Detaylı Analiz
+Breadcrumbs::for('analytics.short-link', function (BreadcrumbTrail $trail, \App\Models\ShortLink $shortLink) {
+    $trail->parent('analytics.index');
+    $trail->push($shortLink->title ?? $shortLink->short_code, route('analytics.short-link', $shortLink));
+});
+
+// Ana Sayfa > Başlangıç > Analitik & Raporlama > QR Code Detaylı Analiz
+Breadcrumbs::for('analytics.qr-code', function (BreadcrumbTrail $trail, \App\Models\QrCode $qrCode) {
+    $trail->parent('analytics.index');
+    $trail->push($qrCode->name, route('analytics.qr-code', $qrCode));
+});
+
+// Ana Sayfa > Başlangıç > Analitik & Raporlama > Brochure Detaylı Analiz
+Breadcrumbs::for('analytics.brochure', function (BreadcrumbTrail $trail, \App\Models\Brochure $brochure) {
+    $trail->parent('analytics.index');
+    $trail->push($brochure->name, route('analytics.brochure', $brochure));
+});
+
+// Ana Sayfa > Başlangıç > Analitik & Raporlama > VCard Detaylı Analiz
+Breadcrumbs::for('analytics.v-card', function (BreadcrumbTrail $trail, \App\Models\VCard $vCard) {
+    $trail->parent('analytics.index');
+    $trail->push($vCard->getLocalizedField('name') ?? __('common.v_card'), route('analytics.v-card', $vCard));
+});
+
 // Ana Sayfa > Başlangıç > Kullanıcı Yönetimi
 Breadcrumbs::for('user-management.index', function (BreadcrumbTrail $trail) {
     $trail->parent('dashboard');
@@ -87,6 +117,12 @@ Breadcrumbs::for('media-library.index', function (BreadcrumbTrail $trail) {
 Breadcrumbs::for('settings', function (BreadcrumbTrail $trail) {
     $trail->parent('dashboard');
     $trail->push(__('common.settings'), route('settings.index'));
+});
+
+// Ana Sayfa > Başlangıç > API Token'ları
+Breadcrumbs::for('api-tokens.index', function (BreadcrumbTrail $trail) {
+    $trail->parent('dashboard');
+    $trail->push(__('common.api_tokens'), route('api-tokens.index'));
 });
 
 // Ana Sayfa > Başlangıç > Kategori Yönetimi
@@ -178,4 +214,28 @@ Breadcrumbs::for('brochure.show', function (BreadcrumbTrail $trail, \App\Models\
 Breadcrumbs::for('brochure.edit', function (BreadcrumbTrail $trail, \App\Models\Brochure $brochure) {
     $trail->parent('brochure.show', $brochure);
     $trail->push(__('common.edit'), route('brochure.edit', $brochure));
+});
+
+// Ana Sayfa > Başlangıç > Link Kısaltma
+Breadcrumbs::for('short-link.index', function (BreadcrumbTrail $trail) {
+    $trail->parent('dashboard');
+    $trail->push(__('common.short_link_list'), route('short-link.index'));
+});
+
+// Ana Sayfa > Başlangıç > Link Kısaltma > Yeni Link Kısalt
+Breadcrumbs::for('short-link.create', function (BreadcrumbTrail $trail) {
+    $trail->parent('short-link.index');
+    $trail->push(__('common.create_short_link'), route('short-link.create'));
+});
+
+// Ana Sayfa > Başlangıç > Link Kısaltma > [ShortLink]
+Breadcrumbs::for('short-link.show', function (BreadcrumbTrail $trail, \App\Models\ShortLink $shortLink) {
+    $trail->parent('short-link.index');
+    $trail->push($shortLink->title ?? $shortLink->short_code, route('short-link.show', $shortLink));
+});
+
+// Ana Sayfa > Başlangıç > Link Kısaltma > Düzenle [ShortLink]
+Breadcrumbs::for('short-link.edit', function (BreadcrumbTrail $trail, \App\Models\ShortLink $shortLink) {
+    $trail->parent('short-link.show', $shortLink);
+    $trail->push(__('common.edit'), route('short-link.edit', $shortLink));
 });

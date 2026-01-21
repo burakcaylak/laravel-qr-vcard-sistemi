@@ -7,7 +7,9 @@ use App\Models\Brochure;
 use App\Models\Category;
 use App\Models\File;
 use App\Helpers\ActivityLogHelper;
+use App\Helpers\CacheHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeGenerator;
 
@@ -16,20 +18,9 @@ class BrochureController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(\App\DataTables\BrochuresDataTable $dataTable)
     {
-        $brochures = Brochure::with(['user', 'category', 'file'])
-            ->latest()
-            ->paginate(15);
-        
-        // Her brochure için QR kod kontrolü yap ve yoksa oluştur
-        foreach ($brochures as $brochure) {
-            if (!$brochure->qr_code_path || !Storage::disk('public')->exists($brochure->qr_code_path)) {
-                $this->generateQrImage($brochure);
-            }
-        }
-            
-        return view('pages.brochure.list', compact('brochures'));
+        return $dataTable->render('pages.brochure.list');
     }
 
     /**
@@ -37,10 +28,7 @@ class BrochureController extends Controller
      */
     public function create()
     {
-        $categories = Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         $files = File::where(function($query) {
                 $query->where('type', 'pdf')
@@ -119,6 +107,22 @@ class BrochureController extends Controller
             }
         }
 
+        // Password protection kontrolü
+        if ($request->has('password_protected') && $request->input('password_protected')) {
+            $data['password_protected'] = true;
+            // Şifre varsa hash'le
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                // Şifre korumalı ama şifre girilmemiş
+                return back()->withErrors(['password' => __('common.password_required_when_protected')]);
+            }
+        } else {
+            // Password protection kapalı
+            $data['password_protected'] = false;
+            $data['password'] = null;
+        }
+
         $brochure = Brochure::create($data);
 
         // QR kod görselini oluştur
@@ -145,10 +149,7 @@ class BrochureController extends Controller
      */
     public function edit(Brochure $brochure)
     {
-        $categories = Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         $files = File::where(function($query) {
                 $query->where('type', 'pdf')
@@ -269,7 +270,41 @@ class BrochureController extends Controller
             $data['background_color'] = $brochure->background_color ?? '#ffffff';
         }
 
+        // Password protection kontrolü
+        // Checkbox gönderilmediğinde false olarak kabul et (Laravel checkbox göndermezse)
+        $passwordProtected = $request->has('password_protected') && $request->input('password_protected');
+        
+        if ($passwordProtected) {
+            $data['password_protected'] = true;
+            // Şifre varsa hash'le
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } elseif (empty($brochure->password)) {
+                // Şifre korumalı ama şifre girilmemiş ve mevcut şifre yoksa hata
+                return back()->withErrors(['password' => __('common.password_required_when_protected')]);
+            } else {
+                // Şifre değiştirilmemiş, mevcut şifreyi koru
+                unset($data['password']);
+            }
+        } else {
+            // Password protection kapalı
+            $data['password_protected'] = false;
+            // Şifre koruması kapatılıyorsa şifreyi ve session'ı temizle
+            if ($brochure->password_protected) {
+                $data['password'] = null;
+                // Session'ı temizle
+                $sessionKey = 'brochure_' . $brochure->token . '_verified';
+                session()->forget($sessionKey);
+            } else {
+                // Şifre koruması zaten kapalıydı, şifre alanını değiştirme
+                unset($data['password']);
+            }
+        }
+
         $brochure->update($data);
+        
+        // Model'i yeniden yükle
+        $brochure->refresh();
 
         // QR kod görselini yeniden oluştur
         $this->generateQrImage($brochure);
@@ -341,8 +376,19 @@ class BrochureController extends Controller
             abort(404, 'Kitapçık bulunamadı veya aktif değil.');
         }
         
+        // Model'i veritabanından yeniden yükle (cache sorununu önlemek için)
+        $brochure->refresh();
+        
         if ($brochure->is_expired) {
             abort(410, 'Kitapçığın süresi dolmuş.');
+        }
+
+        // Şifre kontrolü
+        if ($brochure->password_protected) {
+            $sessionKey = 'brochure_' . $token . '_verified';
+            if (!session()->has($sessionKey)) {
+                return redirect()->route('brochure.password', $token);
+            }
         }
         
         // View sayısını artır
@@ -427,6 +473,91 @@ class BrochureController extends Controller
                 'brochure_id' => $brochure->id,
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    public function password($token)
+    {
+        $brochure = Brochure::where('token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$brochure) {
+            abort(404, 'Kitapçık bulunamadı veya aktif değil.');
+        }
+
+        if (!$brochure->password_protected) {
+            return redirect()->route('brochure.access', $token);
+        }
+
+        return view('pages.brochure.password', compact('brochure'));
+    }
+
+    public function verifyPassword(Request $request, $token)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        $brochure = Brochure::where('token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$brochure) {
+            abort(404, 'Kitapçık bulunamadı veya aktif değil.');
+        }
+
+        if ($brochure->verifyPassword($request->password)) {
+            session(['brochure_' . $token . '_verified' => true]);
+            return redirect()->route('brochure.access', $token);
+        }
+
+        return back()->withErrors(['password' => __('common.invalid_password')]);
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:delete,activate,deactivate',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:brochures,id',
+        ]);
+
+        $ids = $request->ids;
+        $action = $request->action;
+
+        \DB::beginTransaction();
+        try {
+            switch ($action) {
+                case 'delete':
+                    Brochure::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->delete();
+                    break;
+                case 'activate':
+                    Brochure::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => true]);
+                    break;
+                case 'deactivate':
+                    Brochure::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => false]);
+                    break;
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('common.bulk_action_success'),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => __('common.bulk_action_error'),
+            ], 500);
         }
     }
 }

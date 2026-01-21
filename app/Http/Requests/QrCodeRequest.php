@@ -34,6 +34,8 @@ class QrCodeRequest extends FormRequest
             'format' => ['nullable', 'in:png,svg'],
             'is_active' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:today'],
+            'password' => ['nullable', 'string', 'min:4', 'max:255'],
+            'password_protected' => ['nullable', 'boolean'],
         ];
 
         if ($this->qr_type === 'file') {

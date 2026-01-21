@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\VCardTemplateRequest;
 use App\Models\VCardTemplate;
+use App\Helpers\CacheHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -31,10 +32,7 @@ class VCardTemplateController extends Controller
      */
     public function create()
     {
-        $categories = \App\Models\Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         return view('pages.v-card-template.create', compact('categories'));
     }
@@ -94,10 +92,7 @@ class VCardTemplateController extends Controller
      */
     public function edit(VCardTemplate $vCardTemplate)
     {
-        $categories = \App\Models\Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         return view('pages.v-card-template.edit', compact('vCardTemplate', 'categories'));
     }

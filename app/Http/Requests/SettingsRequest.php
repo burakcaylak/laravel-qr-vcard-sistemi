@@ -33,6 +33,7 @@ class SettingsRequest extends FormRequest
             'index_enabled' => 'nullable|boolean',
             'language' => 'required|in:tr,en',
             'footer_text' => 'nullable|string|max:500',
+            'short_link_domain' => 'nullable|string|max:255',
         ];
     }
 }

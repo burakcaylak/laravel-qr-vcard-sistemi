@@ -24,6 +24,9 @@ class QrAccessController extends Controller
             abort(404, __('common.qr_code_not_found'));
         }
         
+        // Model'i veritabanından yeniden yükle (cache sorununu önlemek için)
+        $qrCode->refresh();
+        
         // Ekstra kontrol (güvenlik için)
         if (!$qrCode->is_active) {
             abort(403, 'QR kod aktif değil.');
@@ -31,6 +34,14 @@ class QrAccessController extends Controller
         
         if ($qrCode->is_expired) {
             abort(410, 'QR kodun süresi dolmuş.');
+        }
+
+        // Şifre kontrolü
+        if ($qrCode->password_protected) {
+            $sessionKey = 'qr_code_' . $token . '_verified';
+            if (!session()->has($sessionKey)) {
+                return redirect()->route('qr.password', $token);
+            }
         }
         
         $qrCode->increment('scan_count');
@@ -291,5 +302,44 @@ class QrAccessController extends Controller
             $filePath,
             $file->original_name
         );
+    }
+
+    public function password($token)
+    {
+        $qrCode = QrCode::where('token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$qrCode) {
+            abort(404, __('common.qr_code_not_found'));
+        }
+
+        if (!$qrCode->password_protected) {
+            return redirect()->route('qr.access', $token);
+        }
+
+        return view('pages.qr-code.password', compact('qrCode'));
+    }
+
+    public function verifyPassword(Request $request, $token)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        $qrCode = QrCode::where('token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$qrCode) {
+            abort(404, __('common.qr_code_not_found'));
+        }
+
+        if ($qrCode->verifyPassword($request->password)) {
+            session(['qr_code_' . $token . '_verified' => true]);
+            return redirect()->route('qr.access', $token);
+        }
+
+        return back()->withErrors(['password' => __('common.invalid_password')]);
     }
 }

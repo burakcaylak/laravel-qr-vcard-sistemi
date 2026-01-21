@@ -156,6 +156,27 @@
                     <small class="form-text text-muted">{{ __('common.expires_at_hint') }}</small>
                 </div>
 
+                <!-- Password Protection -->
+                <div class="separator separator-dashed my-5"></div>
+                <h4 class="fw-bold mb-5">{{ __('common.password_protection') }}</h4>
+                <div class="mb-5">
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input class="form-check-input" type="checkbox" name="password_protected" id="password_protected" value="1" {{ old('password_protected') ? 'checked' : '' }}>
+                        <label class="form-check-label" for="password_protected">
+                            {{ __('common.password_protected') }}
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">{{ __('common.password_protected_link_hint') }}</small>
+                </div>
+                <div class="mb-5" id="password_field" style="display: {{ old('password_protected') ? 'block' : 'none' }};">
+                    <label class="form-label {{ old('password_protected') ? 'required' : '' }}">{{ __('common.password') }}</label>
+                    <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ __('common.password') }}">
+                    @error('password')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <!-- End Password Protection -->
+
                 <div class="d-flex justify-content-end">
                     <a href="{{ route('brochure.index') }}" class="btn btn-light me-3">{{ __('common.cancel') }}</a>
                     <button type="submit" class="btn btn-primary">{{ __('common.save') }}</button>
@@ -1810,6 +1831,24 @@
                 document.querySelector('input[name="background_color"]').value = this.value;
             }
         });
+
+        // Password protection toggle
+        const passwordProtectedCheckbox = document.getElementById('password_protected');
+        const passwordField = document.getElementById('password_field');
+
+        function togglePasswordField() {
+            if (passwordProtectedCheckbox.checked) {
+                passwordField.style.display = 'block';
+                passwordField.querySelector('label').classList.add('required');
+            } else {
+                passwordField.style.display = 'none';
+                passwordField.querySelector('label').classList.remove('required');
+                passwordField.querySelector('input[name="password"]').value = '';
+            }
+        }
+
+        passwordProtectedCheckbox.addEventListener('change', togglePasswordField);
+        togglePasswordField(); // Initial call
 
         // PDF input değiştiğinde dosya seçimini temizle
         document.querySelector('input[name="pdf_file"]')?.addEventListener('change', function() {

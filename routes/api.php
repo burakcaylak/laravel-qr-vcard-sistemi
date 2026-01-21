@@ -107,4 +107,54 @@ Route::prefix('v1')->group(function () {
     Route::delete('/permissions/{id}', function ($id) {
         return app(SamplePermissionApi::class)->delete($id);
     });
+
+    // Short Link API
+    Route::middleware('auth:sanctum')->prefix('short-links')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\ShortLinkApiController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\ShortLinkApiController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\ShortLinkApiController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\ShortLinkApiController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\ShortLinkApiController::class, 'destroy']);
+        Route::get('/{id}/stats', [\App\Http\Controllers\Api\ShortLinkApiController::class, 'stats']);
+    });
+
+    // QR Code API
+    Route::middleware('auth:sanctum')->prefix('qr-codes')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\QrCodeApiController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\QrCodeApiController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\QrCodeApiController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\QrCodeApiController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\QrCodeApiController::class, 'destroy']);
+        Route::get('/{id}/stats', [\App\Http\Controllers\Api\QrCodeApiController::class, 'stats']);
+    });
+
+    // Brochure API
+    Route::middleware('auth:sanctum')->prefix('brochures')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\BrochureApiController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\BrochureApiController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\BrochureApiController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\BrochureApiController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\BrochureApiController::class, 'destroy']);
+        Route::get('/{id}/stats', [\App\Http\Controllers\Api\BrochureApiController::class, 'stats']);
+    });
+
+    // VCard API
+    Route::middleware('auth:sanctum')->prefix('vcards')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\VCardApiController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\VCardApiController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\VCardApiController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\VCardApiController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\VCardApiController::class, 'destroy']);
+        Route::get('/{id}/stats', [\App\Http\Controllers\Api\VCardApiController::class, 'stats']);
+    });
+
+    // File API
+    Route::middleware('auth:sanctum')->prefix('files')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\FileApiController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\FileApiController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\FileApiController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\FileApiController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\FileApiController::class, 'destroy']);
+        Route::get('/{id}/download', [\App\Http\Controllers\Api\FileApiController::class, 'download']);
+    });
 });

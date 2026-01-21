@@ -32,12 +32,15 @@ class QrCode extends Model
         'download_count',
         'is_active',
         'expires_at',
+        'password',
+        'password_protected',
     ];
 
     protected $casts = [
         'request_date' => 'date',
         'expires_at' => 'datetime',
         'is_active' => 'boolean',
+        'password_protected' => 'boolean',
         'size' => 'integer',
         'scan_count' => 'integer',
         'download_count' => 'integer',
@@ -94,6 +97,16 @@ class QrCode extends Model
         }
         
         return $this->expires_at->isPast();
+    }
+
+    public function hasPassword(): bool
+    {
+        return !empty($this->password);
+    }
+
+    public function verifyPassword($password): bool
+    {
+        return password_verify($password, $this->password);
     }
     
     /**

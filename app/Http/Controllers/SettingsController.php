@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SettingsRequest;
 use App\Models\Settings;
+use App\Helpers\CacheHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
@@ -25,13 +26,8 @@ class SettingsController extends Controller
 
     public function index()
     {
-        $settings = Settings::getSettings();
-        $categories = \Illuminate\Support\Facades\Cache::remember('categories.active', 3600, function () {
-            return \App\Models\Category::where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get();
-        });
+        $settings = CacheHelper::getSettings();
+        $categories = CacheHelper::getActiveCategories();
         return view('pages.settings.index', compact('settings', 'categories'));
     }
 
@@ -98,6 +94,7 @@ class SettingsController extends Controller
         $settings->index_enabled = $request->has('index_enabled') && $request->input('index_enabled') == '1';
         $settings->language = $request->input('language', 'tr');
         $settings->footer_text = $request->input('footer_text');
+        $settings->short_link_domain = $request->input('short_link_domain');
         $settings->save();
         
         // Cache'i temizle

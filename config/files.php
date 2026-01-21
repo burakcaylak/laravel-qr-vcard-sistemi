@@ -63,4 +63,14 @@ return [
     */
     'clamav_path' => env('CLAMAV_PATH', '/usr/bin/clamscan'),
     'enable_virus_scanning' => env('ENABLE_VIRUS_SCANNING', false),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | FFmpeg Configuration
+    |--------------------------------------------------------------------------
+    |
+    | FFmpeg path for video processing. Set to null to disable video processing.
+    |
+    */
+    'ffmpeg_path' => env('FFMPEG_PATH', 'ffmpeg'),
 ];

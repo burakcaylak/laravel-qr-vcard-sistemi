@@ -7,19 +7,50 @@ use App\Models\QrCode;
 use App\Models\User;
 use App\Models\Settings;
 use App\Models\VCard;
+use App\Models\ShortLink;
+use App\Models\ShortLinkClick;
+use App\Models\Brochure;
+use App\Helpers\CacheHelper;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // İstatistikler
-        $stats = [
-            'total_files' => File::count(),
-            'total_users' => User::count(),
-            'total_qr_code_scans' => QrCode::sum('scan_count'),
-            'total_vcard_scans' => VCard::sum('scan_count'),
-        ];
+        // İstatistikler (Cache'den al)
+        $stats = CacheHelper::getDashboardStats();
+
+        // Son 30 günlük tıklama/tarama istatistikleri
+        $clickStats = ShortLinkClick::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->where('created_at', '>=', Carbon::now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->pluck('count', 'date')
+            ->toArray();
+
+        // Son 7 günlük istatistikler
+        $last7Days = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i)->format('Y-m-d');
+            $last7Days[] = [
+                'date' => Carbon::now()->subDays($i)->format('d M'),
+                'clicks' => ShortLinkClick::whereDate('created_at', $date)->count(),
+                'qr_scans' => QrCode::whereDate('created_at', $date)->sum('scan_count'),
+                'vcard_scans' => VCard::whereDate('created_at', $date)->sum('scan_count'),
+            ];
+        }
+
+        // En çok tıklanan linkler
+        $topLinks = ShortLink::orderBy('click_count', 'desc')
+            ->limit(5)
+            ->get();
+
+        // En çok taranan QR kodlar
+        $topQrCodes = QrCode::orderBy('scan_count', 'desc')
+            ->limit(5)
+            ->get();
 
         // Son eklenen dosyalar
         $recentFiles = File::with('user')
@@ -78,6 +109,6 @@ class DashboardController extends Controller
             ],
         ];
 
-        return view('pages.dashboards.index', compact('stats', 'recentFiles', 'recentQrCodes', 'recentUsers', 'shortcuts'));
+        return view('pages.dashboards.index', compact('stats', 'recentFiles', 'recentQrCodes', 'recentUsers', 'shortcuts', 'last7Days', 'topLinks', 'topQrCodes'));
     }
 }

@@ -24,11 +24,13 @@ class File extends Model
         'category',
         'category_id',
         'is_public',
+        'is_active',
         'download_count',
     ];
 
     protected $casts = [
         'is_public' => 'boolean',
+        'is_active' => 'boolean',
         'size' => 'integer',
         'download_count' => 'integer',
     ];

@@ -6,7 +6,9 @@ use App\Http\Requests\QrCodeRequest;
 use App\Models\File;
 use App\Models\QrCode;
 use App\Helpers\ActivityLogHelper;
+use App\Helpers\CacheHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeGenerator;
 
@@ -28,10 +30,7 @@ class QrCodeController extends Controller
         $files = File::latest()
             ->get(); // Tüm dosyaları göster
 
-        $categories = \App\Models\Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         // Media Library'den dosyaları al (File modelindeki dosyalar)
         $files = \App\Models\File::orderBy('created_at', 'desc')->get();
@@ -57,6 +56,22 @@ class QrCodeController extends Controller
         // file_id varsa kaydet
         if ($request->has('file_id')) {
             $data['file_id'] = $request->input('file_id');
+        }
+
+        // Password protection kontrolü
+        if ($request->has('password_protected') && $request->input('password_protected')) {
+            $data['password_protected'] = true;
+            // Şifre varsa hash'le
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                // Şifre korumalı ama şifre girilmemiş
+                return back()->withErrors(['password' => __('common.password_required_when_protected')]);
+            }
+        } else {
+            // Password protection kapalı
+            $data['password_protected'] = false;
+            $data['password'] = null;
         }
 
         // Token model'de otomatik oluşturulacak
@@ -196,6 +211,19 @@ class QrCodeController extends Controller
 
         $qrCode->load(['user', 'file']);
 
+        // QR kod görseli yoksa oluştur
+        if (!$qrCode->file_path || !Storage::disk('public')->exists($qrCode->file_path)) {
+            try {
+                $qrCode->generateQrImage();
+                $qrCode->refresh();
+            } catch (\Exception $e) {
+                \Log::error('QR code image generation failed in show method', [
+                    'qr_code_id' => $qrCode->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // Aktivite kayıtlarını çek
         $activityLogs = collect();
         if (\Illuminate\Support\Facades\Schema::hasTable('activity_logs')) {
@@ -238,10 +266,7 @@ class QrCodeController extends Controller
         $files = File::latest()
             ->get(); // Tüm dosyaları göster
 
-        $categories = \App\Models\Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = CacheHelper::getActiveCategories();
 
         // Çoklu dosyaları yükle
         $qrCode->load('files');
@@ -291,7 +316,41 @@ class QrCodeController extends Controller
             \Log::info('URL tipi QR kod güncelleniyor', ['content' => $data['content'], 'qr_type' => $request->qr_type]);
         }
 
+        // Password protection kontrolü
+        // Checkbox gönderilmediğinde false olarak kabul et (Laravel checkbox göndermezse)
+        $passwordProtected = $request->has('password_protected') && $request->input('password_protected');
+        
+        if ($passwordProtected) {
+            $data['password_protected'] = true;
+            // Şifre varsa hash'le
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } elseif (empty($qrCode->password)) {
+                // Şifre korumalı ama şifre girilmemiş ve mevcut şifre yoksa hata
+                return back()->withErrors(['password' => __('common.password_required_when_protected')]);
+            } else {
+                // Şifre değiştirilmemiş, mevcut şifreyi koru
+                unset($data['password']);
+            }
+        } else {
+            // Password protection kapalı
+            $data['password_protected'] = false;
+            // Şifre koruması kapatılıyorsa şifreyi ve session'ı temizle
+            if ($qrCode->password_protected) {
+                $data['password'] = null;
+                // Session'ı temizle
+                $sessionKey = 'qr_code_' . $qrCode->token . '_verified';
+                session()->forget($sessionKey);
+            } else {
+                // Şifre koruması zaten kapalıydı, şifre alanını değiştirme
+                unset($data['password']);
+            }
+        }
+
         $qrCode->update($data);
+        
+        // Model'i yeniden yükle
+        $qrCode->refresh();
 
         // Çoklu dosya varsa pivot table'a kaydet (button_names ile)
         if ($request->qr_type === 'multi_file') {
@@ -467,5 +526,51 @@ class QrCodeController extends Controller
         $qrCode->file_path = $fileName;
         $qrCode->format = $format;
         $qrCode->save();
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:delete,activate,deactivate',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:qr_codes,id',
+        ]);
+
+        $ids = $request->ids;
+        $action = $request->action;
+
+        \DB::beginTransaction();
+        try {
+            switch ($action) {
+                case 'delete':
+                    QrCode::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->delete();
+                    break;
+                case 'activate':
+                    QrCode::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => true]);
+                    break;
+                case 'deactivate':
+                    QrCode::whereIn('id', $ids)
+                        ->where('user_id', auth()->id())
+                        ->update(['is_active' => false]);
+                    break;
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('common.bulk_action_success'),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => __('common.bulk_action_error'),
+            ], 500);
+        }
     }
 }
