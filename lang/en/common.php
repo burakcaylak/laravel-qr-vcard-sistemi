@@ -263,7 +263,7 @@ return [
     'entered_value' => 'Entered value: :value',
     'at_least_one_file' => 'You must select at least one file.',
     'url_content_required' => 'Content (URL) is required for URL type.',
-    'file_id_required' => 'File selection is required.',
+    'file_id_required' => 'File selection is required. Please select a file.',
     'invalid_file_selection' => 'Invalid file selection.',
     'button_names_required' => 'Button names are required.',
     'invalid_button_names' => 'Invalid button names.',

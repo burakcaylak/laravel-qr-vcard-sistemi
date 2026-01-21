@@ -6,6 +6,13 @@
     <title>{{ config('app.name', 'WM Dosya&QR Yönetimi') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
+    <!-- Robots Meta Tags - Botların siteyi indexlemesini engelle -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="slurp" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="duckduckbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    
     {!! includeFavicon() !!}
     
     <!--begin::Fonts-->

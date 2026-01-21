@@ -1,0 +1,6 @@
+# Storage klasörüne doğrudan erişimi engelle
+Order deny,allow
+Deny from all
+
+# Sadece public/storage link'i üzerinden erişime izin ver
+# (Bu dosya storage klasörünün kendisine erişimi engeller)

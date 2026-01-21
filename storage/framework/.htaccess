@@ -1,0 +1,5 @@
+# Storage/framework klasörüne doğrudan erişimi engelle
+Order deny,allow
+Deny from all
+
+# Framework cache ve session dosyalarına doğrudan erişim engellenir

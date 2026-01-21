@@ -90,95 +90,122 @@
     @push('scripts')
         {{ $dataTable->scripts() }}
         <script>
-            const table = window.LaravelDataTables['qr-codes-table'];
-            
-            document.getElementById('mySearchInput').addEventListener('keyup', function () {
-                table.search(this.value).draw();
-            });
-
-            // Filtreleme
-            document.getElementById('filter-apply').addEventListener('click', function() {
-                const status = document.getElementById('filter-status').value;
-                const category = document.getElementById('filter-category').value;
-                const dateFrom = document.getElementById('filter-date-from').value;
-                const dateTo = document.getElementById('filter-date-to').value;
-                
-                table.ajax.url('{{ route('qr-code.index') }}?filter_status=' + status + '&filter_category=' + category + '&filter_date_from=' + dateFrom + '&filter_date_to=' + dateTo).load();
-            });
-
-            document.getElementById('filter-clear').addEventListener('click', function() {
-                document.getElementById('filter-status').value = '';
-                document.getElementById('filter-category').value = '';
-                document.getElementById('filter-date-from').value = '';
-                document.getElementById('filter-date-to').value = '';
-                table.ajax.url('{{ route('qr-code.index') }}').load();
-            });
-            document.addEventListener('livewire:init', function () {
-                Livewire.on('success', function () {
-                    window.LaravelDataTables['qr-codes-table'].ajax.reload();
-                });
-                Livewire.on('qr_code_created', function (qrCodeId) {
-                    window.LaravelDataTables['qr-codes-table'].ajax.reload();
-                });
-            });
-
-            // İlk yüklemede menüyü başlat
+            // DataTable yüklenene kadar bekle
             document.addEventListener('DOMContentLoaded', function() {
-                if (typeof KTMenu !== 'undefined') {
-                    KTMenu.createInstances();
-                }
-
-                // Toplu işlemler
-                const bulkActionsContainer = document.getElementById('bulk-actions-container');
-                const bulkActionSelect = document.getElementById('bulk-action-select');
-                const bulkActionBtn = document.getElementById('bulk-action-btn');
-                const table = window.LaravelDataTables['qr-codes-table'];
-
-                // Checkbox durumunu güncelle
-                function updateCheckboxState() {
-                    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-qr-code-id]');
-                    const selectAll = document.getElementById('select-all');
-                    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-                    const totalCount = checkboxes.length;
-                    
-                    // Bulk actions container'ı göster/gizle
-                    if (checkedCount > 0) {
-                        bulkActionsContainer.classList.remove('d-none');
-                    } else {
-                        bulkActionsContainer.classList.add('d-none');
+                // DataTable'ın yüklenmesini bekle
+                setTimeout(function() {
+                    if (!window.LaravelDataTables || !window.LaravelDataTables['qr-codes-table']) {
+                        console.error('DataTable qr-codes-table bulunamadı');
+                        return;
                     }
                     
-                    // Select all checkbox durumunu güncelle
-                    if (selectAll && totalCount > 0) {
-                        if (checkedCount === 0) {
-                            selectAll.checked = false;
-                            selectAll.indeterminate = false;
-                        } else if (checkedCount === totalCount) {
-                            selectAll.checked = true;
-                            selectAll.indeterminate = false;
+                    const table = window.LaravelDataTables['qr-codes-table'];
+                    
+                    const searchInput = document.getElementById('mySearchInput');
+                    if (searchInput) {
+                        searchInput.addEventListener('keyup', function () {
+                            table.search(this.value).draw();
+                        });
+                    }
+
+                    // Filtreleme
+                    const filterApply = document.getElementById('filter-apply');
+                    if (filterApply) {
+                        filterApply.addEventListener('click', function() {
+                            const status = document.getElementById('filter-status').value;
+                            const category = document.getElementById('filter-category').value;
+                            const dateFrom = document.getElementById('filter-date-from').value;
+                            const dateTo = document.getElementById('filter-date-to').value;
+                            
+                            table.ajax.url('{{ route('qr-code.index') }}?filter_status=' + status + '&filter_category=' + category + '&filter_date_from=' + dateFrom + '&filter_date_to=' + dateTo).load();
+                        });
+                    }
+
+                    const filterClear = document.getElementById('filter-clear');
+                    if (filterClear) {
+                        filterClear.addEventListener('click', function() {
+                            document.getElementById('filter-status').value = '';
+                            document.getElementById('filter-category').value = '';
+                            document.getElementById('filter-date-from').value = '';
+                            document.getElementById('filter-date-to').value = '';
+                            table.ajax.url('{{ route('qr-code.index') }}').load();
+                        });
+                    }
+                    
+                    // Livewire event listeners
+                    document.addEventListener('livewire:init', function () {
+                        Livewire.on('success', function () {
+                            if (window.LaravelDataTables && window.LaravelDataTables['qr-codes-table']) {
+                                window.LaravelDataTables['qr-codes-table'].ajax.reload();
+                            }
+                        });
+                        Livewire.on('qr_code_created', function (qrCodeId) {
+                            if (window.LaravelDataTables && window.LaravelDataTables['qr-codes-table']) {
+                                window.LaravelDataTables['qr-codes-table'].ajax.reload();
+                            }
+                        });
+                    });
+
+                    // İlk yüklemede menüyü başlat
+                    if (typeof KTMenu !== 'undefined') {
+                        KTMenu.createInstances();
+                    }
+
+                    // Toplu işlemler
+                    const bulkActionsContainer = document.getElementById('bulk-actions-container');
+                    const bulkActionSelect = document.getElementById('bulk-action-select');
+                    const bulkActionBtn = document.getElementById('bulk-action-btn');
+                    
+                    if (!bulkActionsContainer || !bulkActionSelect || !bulkActionBtn) {
+                        console.error('Bulk actions elementleri bulunamadı');
+                        return;
+                    }
+
+                    // Checkbox durumunu güncelle
+                    function updateCheckboxState() {
+                        const checkboxes = document.querySelectorAll('input[type="checkbox"][data-qr-code-id]');
+                        const selectAll = document.getElementById('select-all');
+                        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                        const totalCount = checkboxes.length;
+                        
+                        // Bulk actions container'ı göster/gizle
+                        if (checkedCount > 0) {
+                            bulkActionsContainer.classList.remove('d-none');
                         } else {
-                            selectAll.checked = false;
-                            selectAll.indeterminate = true;
+                            bulkActionsContainer.classList.add('d-none');
+                        }
+                        
+                        // Select all checkbox durumunu güncelle
+                        if (selectAll && totalCount > 0) {
+                            if (checkedCount === 0) {
+                                selectAll.checked = false;
+                                selectAll.indeterminate = false;
+                            } else if (checkedCount === totalCount) {
+                                selectAll.checked = true;
+                                selectAll.indeterminate = false;
+                            } else {
+                                selectAll.checked = false;
+                                selectAll.indeterminate = true;
+                            }
                         }
                     }
-                }
 
-                // Checkbox değişikliklerini dinle
-                table.on('draw', function() {
-                    updateCheckboxState();
-                    
-                    // Individual checkbox'lara event listener ekle
-                    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-qr-code-id]');
-                    checkboxes.forEach(function(checkbox) {
-                        checkbox.addEventListener('change', updateCheckboxState);
+                    // Checkbox değişikliklerini dinle
+                    table.on('draw', function() {
+                        updateCheckboxState();
+                        
+                        // Individual checkbox'lara event listener ekle
+                        const checkboxes = document.querySelectorAll('input[type="checkbox"][data-qr-code-id]');
+                        checkboxes.forEach(function(checkbox) {
+                            checkbox.addEventListener('change', updateCheckboxState);
+                        });
                     });
-                });
-                
-                // İlk yüklemede de çalıştır
-                updateCheckboxState();
+                    
+                    // İlk yüklemede de çalıştır
+                    updateCheckboxState();
 
-                // Toplu işlem butonu
-                bulkActionBtn.addEventListener('click', function() {
+                    // Toplu işlem butonu
+                    bulkActionBtn.addEventListener('click', function() {
                     const action = bulkActionSelect.value;
                     if (!action) {
                         Swal.fire({
@@ -248,7 +275,7 @@
                             });
                         }
                     });
-                });
+                }, 500); // 500ms bekle - DataTable yüklenene kadar
             });
         </script>
     @endpush

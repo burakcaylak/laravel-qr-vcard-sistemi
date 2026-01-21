@@ -285,6 +285,7 @@ class VCardController extends Controller
 
     /**
      * Generate vCard content in vCard format (vCard 3.0)
+     * UTF-8 karakterler için Quoted-Printable encoding kullanılır
      */
     protected function generateVCardContent(VCard $vCard): string
     {
@@ -302,34 +303,39 @@ class VCardController extends Controller
         $email = $vCard->email ?? $vCard->getLocalizedField('email', $locale) ?? '';
         $website = $vCard->website ?? $vCard->getLocalizedField('website', $locale) ?? '';
 
+        // UTF-8 BOM ekle (VCF dosyasının UTF-8 olduğunu belirtmek için)
         $vCardLines = [
-            'BEGIN:VCARD',
+            "\xEF\xBB\xBFBEGIN:VCARD", // UTF-8 BOM + BEGIN:VCARD
             'VERSION:3.0',
         ];
 
         // Name
         if ($name) {
             $nameParts = explode(' ', $name, 2);
-            $vCardLines[] = 'FN:' . $name;
-            $vCardLines[] = 'N:' . ($nameParts[1] ?? '') . ';' . ($nameParts[0] ?? '') . ';;;';
+            $vCardLines[] = 'FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:' . $this->quotedPrintableEncode($name);
+            $vCardLines[] = 'N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:' . 
+                $this->quotedPrintableEncode($nameParts[1] ?? '') . ';' . 
+                $this->quotedPrintableEncode($nameParts[0] ?? '') . ';;;';
         }
 
         // Title
         if ($title) {
-            $vCardLines[] = 'TITLE:' . $title;
+            $vCardLines[] = 'TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:' . $this->quotedPrintableEncode($title);
         }
 
         // Organization
         if ($company) {
-            $vCardLines[] = 'ORG:' . $company;
+            $vCardLines[] = 'ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:' . $this->quotedPrintableEncode($company);
         }
 
         // Address
         if ($address) {
-            $vCardLines[] = 'ADR;TYPE=WORK:;;' . str_replace(["\n", "\r"], ';', $address) . ';;;;';
+            $addressFormatted = str_replace(["\n", "\r"], ';', $address);
+            $vCardLines[] = 'ADR;TYPE=WORK;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;' . 
+                $this->quotedPrintableEncode($addressFormatted) . ';;;;';
         }
 
-        // Phone numbers
+        // Phone numbers (phone numbers don't need encoding as they are ASCII)
         if ($phone) {
             $vCardLines[] = 'TEL;TYPE=WORK:' . $phone;
         }
@@ -350,19 +356,76 @@ class VCardController extends Controller
             $vCardLines[] = 'TEL;TYPE=FAX:' . $fax;
         }
 
-        // Email
+        // Email (email addresses are ASCII, no encoding needed)
         if ($email) {
             $vCardLines[] = 'EMAIL;TYPE=WORK:' . $email;
         }
 
-        // Website
+        // Website (URLs are ASCII, no encoding needed)
         if ($website) {
             $vCardLines[] = 'URL:' . $website;
         }
 
         $vCardLines[] = 'END:VCARD';
 
-        return implode("\r\n", $vCardLines);
+        $vcfContent = implode("\r\n", $vCardLines);
+        
+        // UTF-8 encoding'i garanti et
+        if (!mb_check_encoding($vcfContent, 'UTF-8')) {
+            $vcfContent = mb_convert_encoding($vcfContent, 'UTF-8', 'UTF-8');
+        }
+        
+        return $vcfContent;
+    }
+
+    /**
+     * Encode string to Quoted-Printable format for VCF
+     * Türkçe karakterler (İ, Ç, Ş, Ğ, Ü, Ö) için özel encoding
+     */
+    protected function quotedPrintableEncode(string $string): string
+    {
+        if (empty($string)) {
+            return '';
+        }
+        
+        // UTF-8 string'i byte array'e çevir
+        $bytes = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+        $encoded = '';
+        $lineLength = 0;
+        $maxLineLength = 75; // VCF formatı maksimum satır uzunluğu
+        
+        for ($i = 0; $i < strlen($bytes); $i++) {
+            $byte = ord($bytes[$i]);
+            
+            // ASCII karakterler (32-126) ve bazı özel karakterler doğrudan yazılır
+            // VCF formatında =, ;, :, \ karakterleri escape edilmelidir
+            if ($byte >= 32 && $byte <= 126 && !in_array(chr($byte), ['=', ';', ':', '\\'])) {
+                // Satır uzunluğunu kontrol et
+                if ($lineLength >= $maxLineLength - 1) {
+                    $encoded .= "=\r\n ";
+                    $lineLength = 1;
+                }
+                $encoded .= chr($byte);
+                $lineLength++;
+            } else {
+                // UTF-8 byte'larını hex formatında encode et (=XX)
+                $hex = strtoupper(dechex($byte));
+                if (strlen($hex) == 1) {
+                    $hex = '0' . $hex;
+                }
+                
+                // Satır uzunluğunu kontrol et (=XX 3 karakter)
+                if ($lineLength >= $maxLineLength - 3) {
+                    $encoded .= "=\r\n ";
+                    $lineLength = 1;
+                }
+                
+                $encoded .= '=' . $hex;
+                $lineLength += 3;
+            }
+        }
+        
+        return $encoded;
     }
 
     public function bulkAction(Request $request)

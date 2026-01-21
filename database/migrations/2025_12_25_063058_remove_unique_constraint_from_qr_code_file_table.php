@@ -10,11 +10,17 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        // Foreign key constraint'lerini geçici olarak kaldır
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        
         Schema::table('qr_code_file', function (Blueprint $table) {
             // Unique constraint'i kaldır - aynı dosya birden fazla kez eklenebilir
             // Constraint ismi Laravel tarafından otomatik oluşturulur: qr_code_file_qr_code_id_file_id_unique
             $table->dropUnique('qr_code_file_qr_code_id_file_id_unique');
         });
+        
+        // Foreign key constraint'lerini tekrar aktif et
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     /**

@@ -1,2 +1,55 @@
+# robots.txt - Tüm botların siteyi indexlemesini engelle
+
 User-agent: *
 Disallow: /
+
+# Google Bot
+User-agent: Googlebot
+Disallow: /
+
+# Google Image Bot
+User-agent: Googlebot-Image
+Disallow: /
+
+# Bing Bot
+User-agent: Bingbot
+Disallow: /
+
+# Yahoo Bot
+User-agent: Slurp
+Disallow: /
+
+# DuckDuckGo Bot
+User-agent: DuckDuckBot
+Disallow: /
+
+# Baidu Bot
+User-agent: Baiduspider
+Disallow: /
+
+# Yandex Bot
+User-agent: Yandex
+Disallow: /
+
+# Facebook Bot
+User-agent: facebookexternalhit
+Disallow: /
+
+# Twitter Bot
+User-agent: Twitterbot
+Disallow: /
+
+# LinkedIn Bot
+User-agent: LinkedInBot
+Disallow: /
+
+# WhatsApp Bot
+User-agent: WhatsApp
+Disallow: /
+
+# Telegram Bot
+User-agent: TelegramBot
+Disallow: /
+
+# Crawl-delay: Tüm botlar için crawl delay (opsiyonel)
+Crawl-delay: 86400

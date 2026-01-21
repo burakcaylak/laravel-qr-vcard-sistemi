@@ -263,7 +263,7 @@ return [
     "entered_value" => 'Girilen değer: :value',
     "at_least_one_file" => 'En az bir dosya seçmelisiniz.',
     "url_content_required" => 'URL tipi için içerik (URL) zorunludur.',
-    "file_id_required" => 'Dosya seçimi zorunludur.',
+    "file_id_required" => 'Dosya seçimi zorunludur. Lütfen bir dosya seçin.',
     "invalid_file_selection" => 'Dosya seçimi geçersiz.',
     "button_names_required" => 'Buton isimleri zorunludur.',
     "invalid_button_names" => 'Buton isimleri geçersiz.',
@@ -294,6 +294,7 @@ return [
     // Success/Error Messages
     "success" => 'Başarılı',
     "error" => 'Hata',
+    "error_message" => 'Bir hata oluştu',
     "warning" => 'Uyarı',
     "info" => 'Bilgi',
     

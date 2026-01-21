@@ -635,14 +635,19 @@
             const downloadBtn = document.getElementById('vcard-download-btn');
             if (downloadBtn) {
                 downloadBtn.addEventListener('click', () => {
-                    const href = 'data:text/vcard;charset=utf-8,{{ rawurlencode($vCardContent) }}';
-                    const name = '{{ $vCard->name_tr ?? $vCard->name_en ?? 'vcard' }}.vcf';
+                    // VCF içeriği zaten UTF-8 BOM ile oluşturulmuş ve Quoted-Printable encoding ile encode edilmiş
+                    // Blob ile UTF-8 encoding'i garanti et
+                    const vcfContent = @json($vCardContent);
+                    const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const name = '{{ ($vCard->name_tr ?? $vCard->name_en ?? 'vcard') }}.vcf';
                     const a = document.createElement('a');
-                    a.href = href;
+                    a.href = url;
                     a.download = name;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                 });
             }
 
